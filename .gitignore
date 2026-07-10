@@ -1,0 +1,45 @@
+# 環境固有の実行時状態（テスト/本番で内容が異なる、または自動生成される）
+config/config.json
+config/last_loaded_config.json
+config/config.json.bak_before_test
+config.json.bak
+live_state.db
+live_state.db.bak*
+*.pid
+manual_stop.flag
+*.lock
+
+# ログ（日次生成、容量も大きい）
+log/
+logs/
+config_history.jsonl
+
+# ルート直下に残っている古いログファイル（過去の動作確認等の残骸）
+/market_snapshot_*.csv
+/realtime_trading_log_*.csv
+
+# scriptsの実行時状態
+scripts/anomaly_state.json
+
+# APIキー・シークレット
+.env
+ai_review/.env
+scripts/.env
+**/.env
+!*.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# OS/エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 過去コード・ログのバックアップ置き場（いずれ不要になる想定、管理対象外）
+back/
+btc_trading_tool/back/

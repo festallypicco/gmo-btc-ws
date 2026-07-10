@@ -1,0 +1,14 @@
+---
+description: Log and console output must use ASCII-only markers (no emoji or decorative Unicode)
+alwaysApply: true
+---
+
+# No emoji or decorative Unicode in output
+
+When writing or editing log messages, `print()` output, Telegram alerts, Streamlit UI labels, and similar user-visible runtime text in this project:
+
+- Do **not** use emoji (e.g. checkmarks, warning signs, coins, charts).
+- Do **not** use decorative Unicode such as fullwidth brackets `【】`, arrows `←` `→`, or colored-circle symbols.
+- Prefer plain ASCII tags: `[OK]`, `[WARN]`, `[ALERT]`, `[+]`, `[-]`, `->`, `<-`, `[BUY]`, `[SELL]`.
+- Japanese text and yen amounts (`円`) are fine; the goal is Windows cp932-safe, grep-friendly output.
+- Comments and docstrings may use arrows for clarity, but strings that reach logs/console/UI must follow this rule.
