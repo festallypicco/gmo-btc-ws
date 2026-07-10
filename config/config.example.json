@@ -1,0 +1,58 @@
+{
+  "version": "2026-07-09_03-31",
+  "updated_reason": "Adopted the Skeptic's recommendation to prevent overfitting on insufficient 4-day data. We only applied conservative increases to the imbalance entry thresholds for the early_morning (0.62 to 0.64) and night (0.58 to 0.61) profiles to mitigate recent drawdowns, while rejecting aggressive spread and TP/SL changes to avoid execution risks during low liquidity periods. (絶対範囲外のため補正: daytime.daily_target_order_size_btc, early_morning.daily_target_order_size_btc, night.daily_target_order_size_btc) (daily_target_order_size_btc を拒否: early_morning.daily_target_order_size_btc=1.0 は範囲外 (0.001-0.05) のため据え置き; daytime.daily_target_order_size_btc=1.0 は範囲外 (0.001-0.05) のため据え置き; night.daily_target_order_size_btc=1.0 は範囲外 (0.001-0.05) のため据え置き)",
+  "maintenance_pre_action": "close",
+  "maintenance_prepare_minutes": 5,
+  "pending_rollouts": {},
+  "max_duration_sec": 600,
+  "profiles": [
+    {
+      "name": "early_morning",
+      "start_time": "00:00",
+      "end_time": "08:00",
+      "imbalance_entry_threshold": 0.64,
+      "min_entry_wall_btc": 0.05,
+      "min_valid_wall_btc": 0.1,
+      "max_spread_pct": 0.00035,
+      "max_allowed_spread": 3500.0,
+      "imbalance_cancel_threshold": 0.5,
+      "take_profit_pct": 0.0012,
+      "stop_loss_pct": 0.0012,
+      "maker_price_offset_jpy": 1.0,
+      "max_order_size_btc": 0.1,
+      "daily_target_order_size_btc": null
+    },
+    {
+      "name": "daytime",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "imbalance_entry_threshold": 0.55,
+      "min_entry_wall_btc": 0.05,
+      "min_valid_wall_btc": 0.1,
+      "max_spread_pct": 0.0003,
+      "max_allowed_spread": 3000.0,
+      "imbalance_cancel_threshold": 0.5,
+      "take_profit_pct": 0.0015,
+      "stop_loss_pct": 0.0015,
+      "maker_price_offset_jpy": 1.0,
+      "max_order_size_btc": 0.1,
+      "daily_target_order_size_btc": null
+    },
+    {
+      "name": "night",
+      "start_time": "16:00",
+      "end_time": "24:00",
+      "imbalance_entry_threshold": 0.61,
+      "min_entry_wall_btc": 0.05,
+      "min_valid_wall_btc": 0.1,
+      "max_spread_pct": 0.0004,
+      "max_allowed_spread": 4000.0,
+      "imbalance_cancel_threshold": 0.5,
+      "take_profit_pct": 0.002,
+      "stop_loss_pct": 0.0018,
+      "maker_price_offset_jpy": 1.0,
+      "max_order_size_btc": 0.1,
+      "daily_target_order_size_btc": null
+    }
+  ]
+}
