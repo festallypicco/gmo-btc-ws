@@ -1,43 +1,38 @@
-﻿# 迺ｰ蠅・崋譛峨・螳溯｡梧凾迥ｶ諷具ｼ医ユ繧ｹ繝・譛ｬ逡ｪ縺ｧ蜀・ｮｹ縺檎焚縺ｪ繧九√∪縺溘・閾ｪ蜍慕函謌舌＆繧後ｋ・・
+# 環境固有・実行時状態（テスト・本番で内容が異なる、または自動生成される）
 config/config.json
 config/last_loaded_config.json
 config/config.json.bak_before_test
 config.json.bak
 runtime/*
 !runtime/.gitkeep
+live_state.db.bak*
 *.pid
 *.lock
-
-# 繝ｭ繧ｰ・域律谺｡逕滓・縲∝ｮｹ驥上ｂ螟ｧ縺阪＞・・
+# ログ（日次生成、容量も大きい）
 log/
 logs/
 config_history.jsonl
-
-# 繝ｫ繝ｼ繝育峩荳九↓谿九▲縺ｦ縺・ｋ蜿､縺・Ο繧ｰ繝輔ぃ繧､繝ｫ・磯℃蜴ｻ縺ｮ蜍穂ｽ懃｢ｺ隱咲ｭ峨・谿矩ｪｸ・・
+# ルート直下に残っている古いログファイル（過去の動作確認等の残骸）
 /market_snapshot_*.csv
 /realtime_trading_log_*.csv
-
-# API繧ｭ繝ｼ繝ｻ繧ｷ繝ｼ繧ｯ繝ｬ繝・ヨ
+# APIキー・シークレット
 .env
 ai_review/.env
 scripts/.env
 **/.env
 !*.env.example
-
 # Python
 __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
-
-# OS/繧ｨ繝・ぅ繧ｿ
+# OS/エディタ
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
-# 驕主悉繧ｳ繝ｼ繝峨・繝ｭ繧ｰ縺ｮ繝舌ャ繧ｯ繧｢繝・・鄂ｮ縺榊ｴ・医＞縺壹ｌ荳崎ｦ√↓縺ｪ繧区Φ螳壹∫ｮ｡逅・ｯｾ雎｡螟厄ｼ・
+# 過去コードのログのバックアップ配置箱（いずれ不要になる想定、管理対象外）
 back/
 btc_trading_tool/back/
-live_state.db.bak*
-
+# Docker検証用の隔離データ
+docker_test/
