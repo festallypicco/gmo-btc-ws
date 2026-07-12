@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = ROOT / "live_state.db"
+DB_PATH = ROOT / "runtime" / "live_state.db"
 LOG_DIR = ROOT / "log"
 INITIAL_JPY = 50_000.0
 

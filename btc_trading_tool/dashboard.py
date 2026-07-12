@@ -19,12 +19,12 @@ REFRESH_INTERVAL_SEC = 1.0
 STATE_STALE_SEC = 5
 ROOT_DIR = Path(__file__).resolve().parent.parent
 LOG_DIR = ROOT_DIR / "log"
-LIVE_STATE_DB_PATH = ROOT_DIR / "live_state.db"
+LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
 AI_REVIEW_SCRIPT_PATH = ROOT_DIR / "ai_review" / "run_nightly_review.ps1"
 AI_REVIEW_LOCK_PATH = ROOT_DIR / "ai_review" / "run_nightly_review.lock"
 AI_REVIEW_LOCK_FRESH_SEC = 2 * 60 * 60
 AI_RETRY_NOTICE_SEC = 120
-MANUAL_STOP_FLAG_PATH = ROOT_DIR / "manual_stop.flag"
+MANUAL_STOP_FLAG_PATH = ROOT_DIR / "runtime" / "manual_stop.flag"
 ENSURE_ENGINE_SCRIPT_PATH = ROOT_DIR / "scripts" / "ensure_engine_running.ps1"
 
 

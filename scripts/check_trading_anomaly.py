@@ -12,8 +12,8 @@ from typing import Any, Dict, Optional
 from telegram_notifier import send_telegram_message
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-LIVE_STATE_DB_PATH = ROOT_DIR / "live_state.db"
-STATE_PATH = Path(__file__).resolve().parent / "anomaly_state.json"
+LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
+STATE_PATH = Path(__file__).resolve().parent.parent / "runtime" / "anomaly_state.json"
 
 # ---- Thresholds (tune later if needed) -------------------------------------
 MAX_TRADES_PER_HOUR = 60.0

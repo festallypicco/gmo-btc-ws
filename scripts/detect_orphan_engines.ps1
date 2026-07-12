@@ -11,7 +11,7 @@ $ProjectRoot = (Resolve-Path $ProjectRoot).Path
 $UtilsScriptPath = Join-Path $PSScriptRoot "engine_process_utils.ps1"
 . "$UtilsScriptPath"
 
-$PidPath = Join-Path $ProjectRoot "trading_engine.pid"
+$PidPath = Join-Path $ProjectRoot "runtime\trading_engine.pid"
 $LogDir = Join-Path $ProjectRoot "log"
 if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir | Out-Null

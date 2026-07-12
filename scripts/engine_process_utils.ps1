@@ -80,7 +80,7 @@ function Start-EngineProcess {
 
     $projectRootPath = (Resolve-Path $ProjectRoot).Path
     $engineScriptPath = Join-Path $projectRootPath "trading_engine.py"
-    $pidPath = Join-Path $projectRootPath "trading_engine.pid"
+    $pidPath = Join-Path $projectRootPath "runtime\trading_engine.pid"
     $logDir = Join-Path $projectRootPath "log"
     $launcherScriptPath = Join-Path $projectRootPath "scripts\process_launcher.py"
 
@@ -115,8 +115,8 @@ function Wait-EngineHealthy {
     )
 
     $projectRootPath = (Resolve-Path $ProjectRoot).Path
-    $liveDbPath = Join-Path $projectRootPath "live_state.db"
-    $pidPath = Join-Path $projectRootPath "trading_engine.pid"
+    $liveDbPath = Join-Path $projectRootPath "runtime\live_state.db"
+    $pidPath = Join-Path $projectRootPath "runtime\trading_engine.pid"
     $checkScriptPath = Join-Path $projectRootPath "scripts\check_live_state.py"
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
 
@@ -139,4 +139,4 @@ function Wait-EngineHealthy {
 
     return $false
 }
-
+

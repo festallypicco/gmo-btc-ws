@@ -12,8 +12,8 @@ $UtilsScriptPath = Join-Path $PSScriptRoot "engine_process_utils.ps1"
 . "$UtilsScriptPath"
 $LockPath = Join-Path $PSScriptRoot "restart_engine.lock"
 
-$PidPath = Join-Path $ProjectRoot "trading_engine.pid"
-$ManualStopFlagPath = Join-Path $ProjectRoot "manual_stop.flag"
+$PidPath = Join-Path $ProjectRoot "runtime\trading_engine.pid"
+$ManualStopFlagPath = Join-Path $ProjectRoot "runtime\manual_stop.flag"
 $LogDir = Join-Path $ProjectRoot "log"
 if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir | Out-Null

@@ -59,14 +59,14 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 from telegram_notifier import send_telegram_message  # noqa: E402
 
-PID_PATH = ROOT_DIR / "trading_engine.pid"
-LIVE_STATE_DB_PATH = ROOT_DIR / "live_state.db"
+PID_PATH = ROOT_DIR / "runtime" / "trading_engine.pid"
+LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
 LOG_DIR = ROOT_DIR / "log"
 CONFIG_DIR = ROOT_DIR / "config"
 CONFIG_PATH = CONFIG_DIR / "config.json"
 CONFIG_CACHE_PATH = CONFIG_DIR / "last_loaded_config.json"
 CONFIG_HISTORY_PATH = LOG_DIR / "config_history.jsonl"
-MANUAL_STOP_FLAG_PATH = ROOT_DIR / "manual_stop.flag"
+MANUAL_STOP_FLAG_PATH = ROOT_DIR / "runtime" / "manual_stop.flag"
 
 _order_event_timestamps: list[float] = []
 _order_rate_lock = threading.Lock()

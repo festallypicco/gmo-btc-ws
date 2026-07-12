@@ -1,27 +1,23 @@
-# 環境固有の実行時状態（テスト/本番で内容が異なる、または自動生成される）
+﻿# 迺ｰ蠅・崋譛峨・螳溯｡梧凾迥ｶ諷具ｼ医ユ繧ｹ繝・譛ｬ逡ｪ縺ｧ蜀・ｮｹ縺檎焚縺ｪ繧九√∪縺溘・閾ｪ蜍慕函謌舌＆繧後ｋ・・
 config/config.json
 config/last_loaded_config.json
 config/config.json.bak_before_test
 config.json.bak
-live_state.db
-live_state.db.bak*
+runtime/*
+!runtime/.gitkeep
 *.pid
-manual_stop.flag
 *.lock
 
-# ログ（日次生成、容量も大きい）
+# 繝ｭ繧ｰ・域律谺｡逕滓・縲∝ｮｹ驥上ｂ螟ｧ縺阪＞・・
 log/
 logs/
 config_history.jsonl
 
-# ルート直下に残っている古いログファイル（過去の動作確認等の残骸）
+# 繝ｫ繝ｼ繝育峩荳九↓谿九▲縺ｦ縺・ｋ蜿､縺・Ο繧ｰ繝輔ぃ繧､繝ｫ・磯℃蜴ｻ縺ｮ蜍穂ｽ懃｢ｺ隱咲ｭ峨・谿矩ｪｸ・・
 /market_snapshot_*.csv
 /realtime_trading_log_*.csv
 
-# scriptsの実行時状態
-scripts/anomaly_state.json
-
-# APIキー・シークレット
+# API繧ｭ繝ｼ繝ｻ繧ｷ繝ｼ繧ｯ繝ｬ繝・ヨ
 .env
 ai_review/.env
 scripts/.env
@@ -34,12 +30,14 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 
-# OS/エディタ
+# OS/繧ｨ繝・ぅ繧ｿ
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 
-# 過去コード・ログのバックアップ置き場（いずれ不要になる想定、管理対象外）
+# 驕主悉繧ｳ繝ｼ繝峨・繝ｭ繧ｰ縺ｮ繝舌ャ繧ｯ繧｢繝・・鄂ｮ縺榊ｴ・医＞縺壹ｌ荳崎ｦ√↓縺ｪ繧区Φ螳壹∫ｮ｡逅・ｯｾ雎｡螟厄ｼ・
 back/
 btc_trading_tool/back/
+live_state.db.bak*
+

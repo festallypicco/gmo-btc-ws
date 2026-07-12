@@ -88,7 +88,7 @@ _WEEKLY_MAINTENANCE_WEEKDAY = 5  # Monday=0 ... Saturday=5
 _WEEKLY_MAINTENANCE_START = dtime(9, 0, 0)
 _WEEKLY_MAINTENANCE_END = dtime(11, 0, 0)
 _SAFE_MODE_COOLDOWN_MINUTES = 15
-_MANUAL_STOP_FLAG_PATH = Path(__file__).resolve().parent.parent / "manual_stop.flag"
+_MANUAL_STOP_FLAG_PATH = Path(__file__).resolve().parent.parent / "runtime" / "manual_stop.flag"
 _GMO_PRIVATE_API_BASE = "https://api.coin.z.com/private"
 _GMO_LEVERAGE_SYMBOL = "BTC"
 # 建玉差分許容 0.0005 BTC: GMO最小発注単位 0.001 BTC の半分。

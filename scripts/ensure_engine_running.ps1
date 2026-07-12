@@ -11,7 +11,7 @@ $UtilsScriptPath = Join-Path $PSScriptRoot "engine_process_utils.ps1"
 
 $EngineScriptPath = Join-Path $ProjectRoot "trading_engine.py"
 $LogDir = Join-Path $ProjectRoot "log"
-$ManualStopFlagPath = Join-Path $ProjectRoot "manual_stop.flag"
+$ManualStopFlagPath = Join-Path $ProjectRoot "runtime\manual_stop.flag"
 
 if (-not (Test-Path $EngineScriptPath)) {
     Write-Host "[ERROR] trading_engine.py not found: $EngineScriptPath"
