@@ -1,0 +1,36 @@
+.git
+.gitignore
+.cursor
+
+# 環境固有の実行時状態（イメージには焼き込まない、後でvolumeとしてマウントする）
+config/config.json
+config/last_loaded_config.json
+config/config.json.bak_before_test
+config.json.bak
+runtime/*
+!runtime/.gitkeep
+*.pid
+*.lock
+log/
+logs/
+config_history.jsonl
+
+# APIキー・シークレット（起動時にenv_fileとして渡す）
+.env
+ai_review/.env
+scripts/.env
+**/.env
+
+# Python生成物
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# テスト・過去コード（イメージには不要）
+test_*.py
+back/
+btc_trading_tool/back/
+
+# ルート直下の古いログ残骸
+/market_snapshot_*.csv
+/realtime_trading_log_*.csv

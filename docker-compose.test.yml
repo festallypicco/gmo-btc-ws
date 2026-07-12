@@ -1,0 +1,25 @@
+# ローカル隔離テスト用のcompose定義。本番用ではない。
+services:
+  engine:
+    build: .
+    image: gmo-btc-ws:latest
+    container_name: btc-engine-test
+    command: python trading_engine.py
+    volumes:
+      - ./docker_test/config:/app/config
+      - ./docker_test/log:/app/log
+      - ./docker_test/runtime:/app/runtime
+    restart: "no"
+
+  dashboard:
+    image: gmo-btc-ws:latest
+    container_name: btc-dashboard-test
+    command: streamlit run btc_trading_tool/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    volumes:
+      - ./docker_test/config:/app/config
+      - ./docker_test/log:/app/log
+      - ./docker_test/runtime:/app/runtime
+    ports:
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      - engine

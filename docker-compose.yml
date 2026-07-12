@@ -1,0 +1,45 @@
+x-app-image: &app-image
+  build: .
+  image: gmo-btc-ws:latest
+
+services:
+  engine:
+    <<: *app-image
+    container_name: btc-engine
+    command: python trading_engine.py
+    env_file:
+      - .env
+    volumes:
+      - ./config:/app/config
+      - ./log:/app/log
+      - ./runtime:/app/runtime
+    restart: on-failure
+
+  dashboard:
+    <<: *app-image
+    container_name: btc-dashboard
+    command: streamlit run btc_trading_tool/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    env_file:
+      - .env
+    volumes:
+      - ./config:/app/config
+      - ./log:/app/log
+      - ./runtime:/app/runtime
+    ports:
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      - engine
+    restart: on-failure
+
+  ai_review:
+    <<: *app-image
+    container_name: btc-ai-review
+    env_file:
+      - ai_review/.env
+    volumes:
+      - ./config:/app/config
+      - ./log:/app/log
+      - ./runtime:/app/runtime
+    restart: "no"
+    profiles:
+      - manual

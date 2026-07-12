@@ -1,0 +1,9 @@
+[Unit]
+Description=BTC trading AI nightly review pipeline
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gmo-btc-ws
+ExecStart=/usr/bin/docker compose run --rm --profile manual ai_review bash ai_review/run_nightly_review.sh
