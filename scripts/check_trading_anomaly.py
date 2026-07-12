@@ -176,6 +176,14 @@ def main() -> int:
         return 0
 
     prev_total_trades = int(state.get("last_win_count", 0)) + int(state.get("last_loss_count", 0))
+    if current.total_trades < prev_total_trades:
+        LOGGER.info(
+            "live_state reset detected (possible engine restart); skipping alert judgement"
+        )
+        baseline = _default_state(current)
+        _save_state(baseline)
+        return 0
+
     prev_cumulative_pnl = float(state.get("last_cumulative_pnl", 0.0))
 
     delta_trades = current.total_trades - prev_total_trades
