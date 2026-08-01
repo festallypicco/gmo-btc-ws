@@ -25,7 +25,7 @@ from config_manager import (  # noqa: E402
     PARAMETER_MIN_STEP,
     build_profile_definitions,
 )
-from llm_clients import call_gemini, call_groq  # noqa: E402
+from llm_clients import call_gemini, call_groq, classify_llm_error_kind  # noqa: E402
 from profile_config import validate_profiles  # noqa: E402
 from prompts import (  # noqa: E402
     build_moderator_prompt,
@@ -33,6 +33,7 @@ from prompts import (  # noqa: E402
     build_skeptic_prompt,
 )
 from telegram_notifier import send_telegram_message  # noqa: E402
+from backtest_verifier import run_backtest_check  # noqa: E402
 
 LOG_DIR = PROJECT_ROOT / "log"
 CONFIG_PATH = PROJECT_ROOT / "config" / "config.json"
@@ -340,7 +341,7 @@ def apply_daily_rollouts() -> None:
             updated_pending.pop(param_path, None)
             continue
 
-        new_payload, _reverted, _clamped, _rejected = _apply_single_param_update(
+        new_payload, reverted, _clamped, _rejected = _apply_single_param_update(
             current_config=config,
             param_path=param_path,
             applied_value=applied_value,
@@ -348,7 +349,20 @@ def apply_daily_rollouts() -> None:
         )
         write_atomic_json(CONFIG_PATH, new_payload)
         config = new_payload
-        changed.append((param_path, float(current_before), float(applied_value)))
+
+        profile_name, param_key = _parse_param_path(param_path)
+        actual_after = _get_profile_value(config, profile_name, param_key)
+        if actual_after is None:
+            actual_after = float(current_before)
+        changed.append((param_path, float(current_before), float(actual_after)))
+
+        reverted_param_paths = {f"profiles.{item}" for item in reverted}
+        if param_path in reverted_param_paths:
+            next_entry = dict(entry)
+            next_entry["status"] = "reverted"
+            next_entry["current_applied_value"] = float(actual_after)
+            updated_pending[param_path] = next_entry
+            continue
 
         if day_index >= total_days:
             updated_pending.pop(param_path, None)
@@ -356,7 +370,7 @@ def apply_daily_rollouts() -> None:
 
         next_entry = dict(entry)
         next_entry["day_index"] = day_index
-        next_entry["current_applied_value"] = float(applied_value)
+        next_entry["current_applied_value"] = float(actual_after)
         updated_pending[param_path] = next_entry
 
     final_payload = dict(config)
@@ -703,6 +717,7 @@ def main() -> int:
         "final_payload": None,
         "reverted_fields": [],
         "clamped_to_bounds_fields": [],
+        "backtest_gated_fields": [],
     }
 
     summary_path = LOG_DIR / f"ai_review_summary_{target_date}.json"
@@ -745,17 +760,9 @@ def main() -> int:
     except Exception as exc:
         decision_doc["status"] = "failed_before_moderator"
         decision_doc["error"] = str(exc)
+        decision_doc["error_kind"] = classify_llm_error_kind(exc)
         _write_decision_log(decision_path, decision_doc)
-        _notify_non_blocking(
-            "\n".join(
-                [
-                    "[BTC AI議論] エラー",
-                    f"{target_date}: Proposer/Skepticの呼び出しに失敗しました。",
-                    f"エラー内容: {decision_doc['error']}",
-                    "今夜の設定更新は行われていません。",
-                ]
-            )
-        )
+        # LLM呼び出し失敗の深夜リアルタイム通知は送らない（日次レポートへ集約）
         print(f"[ERROR] proposer/skeptic call failed: {exc}", file=sys.stderr)
         return 1
 
@@ -802,17 +809,9 @@ def main() -> int:
         except Exception as exc:
             decision_doc["status"] = "failed_moderator_call"
             decision_doc["error"] = str(exc)
+            decision_doc["error_kind"] = classify_llm_error_kind(exc)
             _write_decision_log(decision_path, decision_doc)
-            _notify_non_blocking(
-                "\n".join(
-                    [
-                        "[BTC AI議論] エラー",
-                        f"{target_date}: Moderatorの呼び出しに失敗しました（リトライ上限到達）。",
-                        f"エラー内容: {decision_doc['error']}",
-                        "今夜の設定更新は行われていません。",
-                    ]
-                )
-            )
+            # LLM呼び出し失敗の深夜リアルタイム通知は送らない（日次レポートへ集約）
             print(f"[ERROR] moderator call failed: {exc}", file=sys.stderr)
             return 1
 
@@ -883,6 +882,7 @@ def main() -> int:
     next_pending_rollouts: Dict[str, Any] = dict(pending_rollouts)
 
     outlier_marks: Dict[str, Dict[str, Any]] = {}
+    backtest_results: Dict[str, Dict[str, Any]] = {}
     adjusted_profiles_for_apply: List[Dict[str, Any]] = []
 
     for profile_name, proposed_p in proposed_profile_map.items():
@@ -924,6 +924,21 @@ def main() -> int:
                 "total_days": entry.get("total_days"),
             }
 
+        backtest_result = run_backtest_check(
+            profile_name=profile_name,
+            current_profile=current_p,
+            proposed_profile=cp,
+            log_dir=LOG_DIR,
+            target_date=target_date,
+        )
+        if backtest_result.get("ran"):
+            backtest_results[profile_name] = backtest_result
+        if backtest_result.get("ran") and backtest_result.get("gated"):
+            for gated_key in backtest_result.get("changed_keys", []):
+                if gated_key in {"imbalance_entry_threshold", "take_profit_pct", "stop_loss_pct"}:
+                    if isinstance(current_p.get(gated_key), (int, float)):
+                        cp[gated_key] = float(current_p[gated_key])
+
         adjusted_profiles_for_apply.append(cp)
 
     (
@@ -964,6 +979,14 @@ def main() -> int:
     decision_doc["clamped_to_bounds_fields"] = clamped_to_bounds_fields
     decision_doc["rejected_daily_target_order_size_reasons"] = rejected_daily_target_reasons
     decision_doc["outlier_rollouts"] = outlier_marks
+    backtest_gated_fields: List[str] = []
+    for bt_profile_name, bt in sorted(backtest_results.items()):
+        if not bt.get("gated"):
+            continue
+        for key in bt.get("changed_keys", []):
+            backtest_gated_fields.append(f"profiles.{bt_profile_name}.{key}")
+    decision_doc["backtest_gated_fields"] = backtest_gated_fields
+    decision_doc["backtest_results"] = backtest_results
     _write_decision_log(decision_path, decision_doc)
     print(f"[INFO] review pipeline completed. config updated: {CONFIG_PATH}")
 
@@ -1022,6 +1045,25 @@ def main() -> int:
             lines.append("clamped(bounds): " + ", ".join(clamped_to_bounds_fields))
         if rejected_daily_target_reasons:
             lines.append("rejected_daily_target: " + "; ".join(rejected_daily_target_reasons))
+        gated_profiles = [
+            (name, bt)
+            for name, bt in sorted(backtest_results.items())
+            if bt.get("gated")
+        ]
+        if gated_profiles:
+            lines.append("backtest_gated:")
+            for name, bt in gated_profiles:
+                reverted_keys = [
+                    k
+                    for k in bt.get("changed_keys", [])
+                    if k in {"imbalance_entry_threshold", "take_profit_pct", "stop_loss_pct"}
+                ]
+                lines.append(
+                    f"profiles.{name} "
+                    f"old_pnl_pct={float(bt.get('old', {}).get('total_pnl_pct', 0.0)):.4f} "
+                    f"new_pnl_pct={float(bt.get('new', {}).get('total_pnl_pct', 0.0)):.4f} "
+                    f"reverted={','.join(reverted_keys)}"
+                )
         send_telegram_message("\n".join(lines))
     except Exception as exc:
         print(f"[WARNING] failed to send Telegram notification: {exc}", file=sys.stderr)

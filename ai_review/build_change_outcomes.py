@@ -280,6 +280,7 @@ def _select_rows_for_window(
         r
         for r in trade_rows
         if r["profile_name"] == profile_name
+        and r["config_version"] == before_version
         and before_start <= r["timestamp"] <= change_ts
     ]
     after_rows = [

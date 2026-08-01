@@ -1,0 +1,7 @@
+[Unit]
+Description=BTC trading monitor heartbeat check
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gmo-btc-ws
+ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_check_monitor_heartbeats.sh

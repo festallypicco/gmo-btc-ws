@@ -57,6 +57,25 @@ function Invoke-PythonScriptAndLog {
     }
 }
 
+function Send-WrapperTelegramAlert {
+    param(
+        [Parameter(Mandatory = $true)][string]$WrapperName,
+        [Parameter(Mandatory = $true)][string]$ErrorText
+    )
+    $msgPath = [System.IO.Path]::GetTempFileName()
+    try {
+        $body = "[ALERT] wrapper exception`nscript=$WrapperName`nerror=$ErrorText"
+        Set-Content -Path $msgPath -Value $body -Encoding UTF8
+        & python -c "import sys; from pathlib import Path; sys.path.insert(0, r'$ScriptDir'); from telegram_notifier import send_telegram_message; p = Path(sys.argv[1]); send_telegram_message(p.read_text(encoding='utf-8'))" $msgPath | Out-Null
+    }
+    catch {
+        Write-AnomalyCheckLog -Message ("Telegram notify failed in catch: {0}" -f $_.Exception.Message) -Level "WARN"
+    }
+    finally {
+        Remove-Item -Path $msgPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
 $exitCode = 0
 $lockAcquired = $false
 
@@ -89,12 +108,16 @@ try {
         }
         else {
             Write-AnomalyCheckLog -Message ("ERROR: check_trading_anomaly.py failed (exit={0})" -f $pythonExitCode) -Level "ERROR"
+            Send-WrapperTelegramAlert `
+                -WrapperName "run_anomaly_check.ps1" `
+                -ErrorText ("check_trading_anomaly.py exit={0}" -f $pythonExitCode)
             $exitCode = 1
         }
     }
 }
 catch {
     Write-AnomalyCheckLog -Message ("ERROR: run_anomaly_check.ps1 exception: {0}" -f $_.Exception.Message) -Level "ERROR"
+    Send-WrapperTelegramAlert -WrapperName "run_anomaly_check.ps1" -ErrorText $_.Exception.Message
     $exitCode = 1
 }
 finally {

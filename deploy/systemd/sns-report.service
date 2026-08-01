@@ -1,0 +1,7 @@
+[Unit]
+Description=BTC trading SNS report (Telegram delivery)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gmo-btc-ws
+ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_sns_report.sh

@@ -14,8 +14,9 @@ _DOTENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=_DOTENV_PATH)
 
 _REQUEST_TIMEOUT_SEC = 120
-# 429（レート制限）・5xx（一時的なサーバー障害）・タイムアウトに対する最大リトライ回数
-_MAX_RETRIES = 5
+# 503 / タイムアウトなど一時障害向け。初回失敗後の再試行回数（合計試行=これ+1）。
+_MAX_RETRIES = 3
+_RETRY_SLEEP_SEC = 30
 _MAX_INCOMPLETE_RETRIES = 2
 _GEMINI_MAX_OUTPUT_TOKENS_CAP = 8192
 
@@ -89,12 +90,29 @@ def _is_daily_quota_exceeded_error(exc: Exception) -> bool:
     return has_resource_exhausted and has_per_day_metric
 
 
+def classify_llm_error_kind(exc: BaseException) -> str:
+    """
+    日次レポート向けの粗い失敗分類。
+    戻り値: タイムアウト / 混雑 / クォータ超過 / その他
+    """
+    as_exc = exc if isinstance(exc, Exception) else Exception(str(exc))
+    if _is_daily_quota_exceeded_error(as_exc) or _is_rate_limit_error(as_exc):
+        return "クォータ超過"
+    if _is_transient_server_error(as_exc):
+        return "混雑"
+    if _is_timeout_error(as_exc):
+        return "タイムアウト"
+    return "その他"
+
+
 def _is_retryable_error(exc: Exception) -> bool:
-    return (
-        _is_rate_limit_error(exc)
-        or _is_transient_server_error(exc)
-        or _is_timeout_error(exc)
-    )
+    """
+    再試行対象は一時的な混雑(5xx/UNAVAILABLE)とタイムアウトのみ。
+    429（日次クォータ含む）は再試行しない。
+    """
+    if _is_rate_limit_error(exc) or _is_daily_quota_exceeded_error(exc):
+        return False
+    return _is_transient_server_error(exc) or _is_timeout_error(exc)
 
 
 def _extract_finish_reason(response: object) -> str:
@@ -123,13 +141,19 @@ def _call_with_retry(fn: Callable[[], str], timeout_sec: int = _REQUEST_TIMEOUT_
         try:
             return _run_with_timeout(fn, timeout_sec=timeout_sec)
         except Exception as exc:
-            if _is_daily_quota_exceeded_error(exc):
-                print("[LLM] daily quota exceeded. no retry.")
+            # 429（日次クォータ含む）は再試行しても当日中は無駄なので即終了。
+            if _is_daily_quota_exceeded_error(exc) or _is_rate_limit_error(exc):
+                print("[LLM] quota/rate-limit exceeded. no retry.")
                 raise
             if not _is_retryable_error(exc) or attempt >= _MAX_RETRIES:
                 raise
-            sleep_sec = 2**attempt
-            time.sleep(sleep_sec)
+            kind = classify_llm_error_kind(exc)
+            print(
+                f"[LLM] retryable failure kind={kind} "
+                f"attempt={attempt + 1}/{_MAX_RETRIES}; "
+                f"sleep {_RETRY_SLEEP_SEC}s"
+            )
+            time.sleep(_RETRY_SLEEP_SEC)
     raise RuntimeError("unexpected retry loop termination")
 
 

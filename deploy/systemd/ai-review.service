@@ -5,5 +5,6 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
+TimeoutStartSec=0
 WorkingDirectory=/opt/gmo-btc-ws
-ExecStart=/usr/bin/docker compose run --rm --profile manual ai_review bash ai_review/run_nightly_review.sh
+ExecStart=/usr/bin/docker compose run --rm --profile manual ai_review bash /app/ai_review/run_nightly_review.sh

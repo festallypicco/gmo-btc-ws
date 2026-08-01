@@ -61,12 +61,51 @@ def _format_recent_change_outcomes(outcomes: Any, limit: int = 5) -> str:
     return "\n".join(lines)
 
 
-def _truncate_last_output_for_proposer(value: Any, max_chars: int = 300) -> Any:
+def _truncate_text_for_proposer(value: Any, max_chars: int = 300) -> Any:
     if not isinstance(value, str):
         return value
     if len(value) <= max_chars:
         return value
     return value[:max_chars] + "...(truncated)"
+
+
+def _truncate_last_output_for_proposer(value: Any, max_chars: int = 300) -> Any:
+    return _truncate_text_for_proposer(value, max_chars=max_chars)
+
+
+def _pending_rollouts_summary_for_proposer(pending: Any) -> Any:
+    """
+    Proposer向け: pending_rollouts の詳細JSONを件数と進行度だけの要約に圧縮する。
+    """
+    if not isinstance(pending, dict) or not pending:
+        return {"count": 0, "items": []}
+    items: list[Dict[str, Any]] = []
+    for param_path, entry in pending.items():
+        if not isinstance(entry, dict):
+            items.append({"path": str(param_path)})
+            continue
+        day_index = entry.get("day_index")
+        total_days = entry.get("total_days")
+        items.append(
+            {
+                "path": str(param_path),
+                "status": entry.get("status"),
+                "day_index": day_index,
+                "total_days": total_days,
+            }
+        )
+    return {"count": len(items), "items": items}
+
+
+def _current_config_for_proposer(config: Any) -> Any:
+    if not isinstance(config, dict):
+        return config
+    copied = dict(config)
+    if "pending_rollouts" in copied:
+        copied["pending_rollouts"] = _pending_rollouts_summary_for_proposer(
+            copied.get("pending_rollouts")
+        )
+    return copied
 
 
 def _past_validation_failures_for_proposer(failures: Any, limit: int) -> Any:
@@ -85,31 +124,179 @@ def _past_validation_failures_for_proposer(failures: Any, limit: int) -> Any:
     return reduced
 
 
-def _build_proposer_reduced_summary(summary: Dict[str, Any], failures_limit: int) -> Dict[str, Any]:
+def _recent_config_changes_for_proposer(
+    changes: Any,
+    *,
+    limit: int = 3,
+    reason_max_chars: int = 300,
+) -> Any:
+    if not isinstance(changes, list):
+        return changes
+    selected = changes[-limit:] if limit > 0 else []
+    reduced: list[Any] = []
+    for row in selected:
+        if not isinstance(row, dict):
+            reduced.append(row)
+            continue
+        item = dict(row)
+        if "reason" in item:
+            item["reason"] = _truncate_text_for_proposer(
+                item.get("reason"),
+                max_chars=reason_max_chars,
+            )
+        reduced.append(item)
+    return reduced
+
+
+def _market_trades_for_prompt(market_trades: Any) -> Any:
+    if not isinstance(market_trades, dict):
+        return market_trades
+    return {
+        "requested_days": market_trades.get("requested_days"),
+        "overall": market_trades.get("overall"),
+        "per_profile": market_trades.get("per_profile"),
+    }
+
+
+def _market_depth_for_prompt(market_depth: Any) -> Any:
+    if not isinstance(market_depth, dict):
+        return market_depth
+    return {
+        "requested_days": market_depth.get("requested_days"),
+        "overall": market_depth.get("overall"),
+        "per_profile": market_depth.get("per_profile"),
+    }
+
+
+def _market_volatility_for_prompt(market_volatility: Any) -> Any:
+    if not isinstance(market_volatility, dict):
+        return market_volatility
+    return {
+        "requested_days": market_volatility.get("requested_days"),
+        "overall": market_volatility.get("overall"),
+        "per_profile": market_volatility.get("per_profile"),
+    }
+
+
+def _window_with_market_ref_for_proposer(window: Any) -> Any:
+    """Proposer向け: weekly_breakdown除外、market_* 集計は残す（14日窓用）。"""
+    if not isinstance(window, dict):
+        return window
+    reduced = dict(window)
+    reduced.pop("weekly_breakdown", None)
+    if "market_trades" in reduced:
+        reduced["market_trades"] = _market_trades_for_prompt(reduced.get("market_trades"))
+    if "market_depth" in reduced:
+        reduced["market_depth"] = _market_depth_for_prompt(reduced.get("market_depth"))
+    if "market_volatility" in reduced:
+        reduced["market_volatility"] = _market_volatility_for_prompt(
+            reduced.get("market_volatility")
+        )
+    return reduced
+
+
+def _window_without_market_blocks_for_proposer(window: Any) -> Any:
+    """Proposer向け: weekly_breakdown と market_* ブロックを除外（30日窓用）。"""
+    if not isinstance(window, dict):
+        return window
+    reduced = dict(window)
+    reduced.pop("weekly_breakdown", None)
+    reduced.pop("market_trades", None)
+    reduced.pop("market_depth", None)
+    reduced.pop("market_volatility", None)
+    return reduced
+
+
+# system+prompt 合計の安全ライン（max_tokens=2000 込みで TPM 8000 を下回る目安）
+PROPOSER_COMBINED_SAFETY_CHARS = 18000
+
+
+def _build_proposer_reduced_summary(
+    summary: Dict[str, Any],
+    failures_limit: int,
+    *,
+    changes_limit: int = 3,
+    reason_max_chars: int = 300,
+    include_rule_review_market: bool = True,
+) -> Dict[str, Any]:
+    windows = summary.get("windows", {})
+    regime = windows.get("regime_reference", {})
+    if include_rule_review_market:
+        rule_review = _window_with_market_ref_for_proposer(windows.get("rule_review"))
+    else:
+        rule_review = _window_without_market_blocks_for_proposer(
+            windows.get("rule_review")
+        )
     return {
         "target_date": summary.get("target_date"),
-        "current_config": summary.get("current_config"),
-        "recent_config_changes": summary.get("recent_config_changes"),
+        "current_config": _current_config_for_proposer(summary.get("current_config")),
+        "recent_config_changes": _recent_config_changes_for_proposer(
+            summary.get("recent_config_changes"),
+            limit=changes_limit,
+            reason_max_chars=reason_max_chars,
+        ),
         "past_validation_failures": _past_validation_failures_for_proposer(
             summary.get("past_validation_failures"),
             failures_limit,
         ),
         "windows": {
-            "anomaly_check": summary.get("windows", {}).get("anomaly_check"),
-            "rule_review": summary.get("windows", {}).get("rule_review"),
-            "stability_check": summary.get("windows", {}).get("stability_check"),
+            "anomaly_check": windows.get("anomaly_check"),
+            "rule_review": rule_review,
+            "stability_check": _window_without_market_blocks_for_proposer(
+                windows.get("stability_check"),
+            ),
             "regime_reference": {
-                "requested_days": summary.get("windows", {}).get("regime_reference", {}).get("requested_days"),
-                "actual_days": summary.get("windows", {}).get("regime_reference", {}).get("actual_days"),
-                "blocks": summary.get("windows", {}).get("regime_reference", {}).get("blocks", []),
-                "summary": summary.get("windows", {}).get("regime_reference", {}).get("summary"),
+                "requested_days": regime.get("requested_days"),
+                "actual_days": regime.get("actual_days"),
+                "blocks": regime.get("blocks", []),
+                "summary": regime.get("summary"),
             },
         },
     }
 
 
-def _assemble_proposer_prompt(summary: Dict[str, Any], failures_limit: int) -> str:
-    reduced_summary = _build_proposer_reduced_summary(summary, failures_limit)
+def _summary_without_key(summary: Dict[str, Any], key: str) -> Dict[str, Any]:
+    stripped = dict(summary)
+    windows = dict(summary.get("windows", {}))
+    new_windows: Dict[str, Any] = {}
+    for window_key, window in windows.items():
+        if not isinstance(window, dict):
+            new_windows[window_key] = window
+            continue
+        copied = dict(window)
+        copied.pop(key, None)
+        new_windows[window_key] = copied
+    stripped["windows"] = new_windows
+    return stripped
+
+
+def _summary_without_market_trades(summary: Dict[str, Any]) -> Dict[str, Any]:
+    return _summary_without_key(summary, "market_trades")
+
+
+def _summary_without_market_depth(summary: Dict[str, Any]) -> Dict[str, Any]:
+    return _summary_without_key(summary, "market_depth")
+
+
+def _summary_without_market_volatility(summary: Dict[str, Any]) -> Dict[str, Any]:
+    return _summary_without_key(summary, "market_volatility")
+
+
+def _assemble_proposer_prompt(
+    summary: Dict[str, Any],
+    failures_limit: int,
+    *,
+    changes_limit: int = 3,
+    reason_max_chars: int = 300,
+    include_rule_review_market: bool = True,
+) -> str:
+    reduced_summary = _build_proposer_reduced_summary(
+        summary,
+        failures_limit,
+        changes_limit=changes_limit,
+        reason_max_chars=reason_max_chars,
+        include_rule_review_market=include_rule_review_market,
+    )
     recent_change_outcomes_text = _format_recent_change_outcomes(
         summary.get("recent_change_outcomes", []),
         limit=5,
@@ -138,9 +325,104 @@ def build_proposer_prompt(summary: Dict[str, Any]) -> Tuple[str, str]:
         "引き上げ提案は流動性リスクを明示して慎重に行ってください。"
     )
 
-    prompt = _assemble_proposer_prompt(summary, failures_limit=5)
+    failures_limit = 5
+    changes_limit = 3
+    reason_max_chars = 300
+    include_rule_review_market = True
+
+    prompt = _assemble_proposer_prompt(
+        summary,
+        failures_limit=failures_limit,
+        changes_limit=changes_limit,
+        reason_max_chars=reason_max_chars,
+        include_rule_review_market=include_rule_review_market,
+    )
     if len(prompt) > 12000:
-        prompt = _assemble_proposer_prompt(summary, failures_limit=2)
+        failures_limit = 2
+        prompt = _assemble_proposer_prompt(
+            summary,
+            failures_limit=failures_limit,
+            changes_limit=changes_limit,
+            reason_max_chars=reason_max_chars,
+            include_rule_review_market=include_rule_review_market,
+        )
+
+    combined_chars = len(system) + len(prompt)
+    if combined_chars > PROPOSER_COMBINED_SAFETY_CHARS:
+        changes_limit = 2
+        reason_max_chars = 200
+        prompt = _assemble_proposer_prompt(
+            summary,
+            failures_limit=failures_limit,
+            changes_limit=changes_limit,
+            reason_max_chars=reason_max_chars,
+            include_rule_review_market=include_rule_review_market,
+        )
+        combined_chars = len(system) + len(prompt)
+        print(
+            "[WARN] proposer prompt size guard: step_a"
+            f" recent_config_changes limit={changes_limit}"
+            f" reason_max={reason_max_chars}"
+            f" (system+prompt chars={combined_chars})"
+        )
+
+    if combined_chars > PROPOSER_COMBINED_SAFETY_CHARS:
+        include_rule_review_market = False
+        prompt = _assemble_proposer_prompt(
+            summary,
+            failures_limit=failures_limit,
+            changes_limit=changes_limit,
+            reason_max_chars=reason_max_chars,
+            include_rule_review_market=include_rule_review_market,
+        )
+        combined_chars = len(system) + len(prompt)
+        print(
+            "[WARN] proposer prompt size guard: step_b"
+            " exclude rule_review market_trades/market_depth/market_volatility"
+            f" (system+prompt chars={combined_chars})"
+        )
+
+    prompt_without_trades = _assemble_proposer_prompt(
+        _summary_without_market_trades(summary),
+        failures_limit=failures_limit,
+        changes_limit=changes_limit,
+        reason_max_chars=reason_max_chars,
+        include_rule_review_market=include_rule_review_market,
+    )
+    prompt_without_depth = _assemble_proposer_prompt(
+        _summary_without_market_depth(summary),
+        failures_limit=failures_limit,
+        changes_limit=changes_limit,
+        reason_max_chars=reason_max_chars,
+        include_rule_review_market=include_rule_review_market,
+    )
+    prompt_without_volatility = _assemble_proposer_prompt(
+        _summary_without_market_volatility(summary),
+        failures_limit=failures_limit,
+        changes_limit=changes_limit,
+        reason_max_chars=reason_max_chars,
+        include_rule_review_market=include_rule_review_market,
+    )
+    reduced_summary = _build_proposer_reduced_summary(
+        summary,
+        failures_limit,
+        changes_limit=changes_limit,
+        reason_max_chars=reason_max_chars,
+        include_rule_review_market=include_rule_review_market,
+    )
+    trades_delta = len(prompt) - len(prompt_without_trades)
+    depth_delta = len(prompt) - len(prompt_without_depth)
+    volatility_delta = len(prompt) - len(prompt_without_volatility)
+    print(
+        f"[INFO] proposer reduced_summary chars={len(_json(reduced_summary))}"
+    )
+    print(
+        f"[INFO] proposer prompt chars={len(prompt)}"
+        f" system+prompt chars={len(system) + len(prompt)}"
+        f" (market_trades_delta=+{trades_delta},"
+        f" depth_delta=+{depth_delta},"
+        f" volatility_delta=+{volatility_delta})"
+    )
     return system, prompt
 
 
@@ -152,6 +434,9 @@ def build_skeptic_prompt(summary: Dict[str, Any], proposer_output: str) -> Tuple
         "2) 14日傾向が 30日 weekly_breakdown で再現しているか。"
         "3) 90日のレジーム変化（dailyベース）に対して過学習していないか。"
         "4) max_order_size_btc の引き上げ提案は、板の厚みと流動性リスクを十分に説明しているか。"
+        "5) market_trades の trades_confidence が insufficient/low の場合、その参考値への依存度を確認すること。"
+        "6) market_depth の depth_confidence が insufficient/low の場合、その参考値への依存度を確認すること。"
+        "7) market_volatility の volatility_confidence が insufficient/low の場合、その参考値への依存度を確認すること。"
     )
     prompt = (
         "集計サマリー（フル）と Proposer 出力を評価し、"

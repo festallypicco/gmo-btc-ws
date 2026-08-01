@@ -64,8 +64,7 @@ def main() -> int:
         ok = (
             rc == 1
             and decision["status"] == "failed_before_moderator"
-            and len(sent_messages) == 1
-            and "Proposer/Skeptic" in sent_messages[0]
+            and len(sent_messages) == 0  # LLM失敗の深夜通知は廃止
         )
         return ok, f"exit={rc}, status={decision['status']}, messages={len(sent_messages)}"
 
@@ -85,8 +84,7 @@ def main() -> int:
         ok = (
             rc == 1
             and decision["status"] == "failed_moderator_call"
-            and len(sent_messages) == 1
-            and "Moderator" in sent_messages[0]
+            and len(sent_messages) == 0  # LLM失敗の深夜通知は廃止
         )
         return ok, f"exit={rc}, status={decision['status']}, messages={len(sent_messages)}"
 

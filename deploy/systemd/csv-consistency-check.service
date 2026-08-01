@@ -1,0 +1,7 @@
+[Unit]
+Description=BTC trading CSV/DB consistency check
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gmo-btc-ws
+ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_csv_consistency_check.sh

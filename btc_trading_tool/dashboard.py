@@ -5,6 +5,8 @@ trading_engine.py が書き込む live_state.db と log/ 配下の取引CSVを�
 状態を可視化する表示専用ビューア。
 """
 import csv
+import json
+import platform
 import sqlite3
 import subprocess
 import time
@@ -14,6 +16,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import streamlit as st
+
+from portfolio_metrics import compute_total_assets_from_live_state
 
 REFRESH_INTERVAL_SEC = 1.0
 STATE_STALE_SEC = 5
@@ -25,6 +29,7 @@ AI_REVIEW_LOCK_PATH = ROOT_DIR / "ai_review" / "run_nightly_review.lock"
 AI_REVIEW_LOCK_FRESH_SEC = 2 * 60 * 60
 AI_RETRY_NOTICE_SEC = 120
 MANUAL_STOP_FLAG_PATH = ROOT_DIR / "runtime" / "manual_stop.flag"
+MANUAL_STOP_REASON_PATH = ROOT_DIR / "runtime" / "manual_stop_reason.json"
 ENSURE_ENGINE_SCRIPT_PATH = ROOT_DIR / "scripts" / "ensure_engine_running.ps1"
 
 
@@ -62,6 +67,59 @@ def _load_recent_trade_rows(limit: int = 100) -> List[Dict[str, str]]:
     return list(reversed(rows))
 
 
+def _load_daily_history(limit: int = 14) -> List[Dict[str, object]]:
+    path = LOG_DIR / "daily_history.jsonl"
+    if not path.exists():
+        return []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return []
+    records: List[Dict[str, object]] = []
+    for line in reversed(lines):
+        text = line.strip()
+        if not text:
+            continue
+        try:
+            row = json.loads(text)
+        except Exception:
+            continue
+        if not isinstance(row, dict):
+            continue
+        wins = int(row.get("wins") or 0)
+        losses = int(row.get("losses") or 0)
+        settlements = int(row.get("settlements") or (wins + losses))
+        realized = row.get("realized_pnl")
+        try:
+            realized_f = float(realized) if realized is not None else 0.0
+        except (TypeError, ValueError):
+            realized_f = 0.0
+        jpy_balance = row.get("jpy_balance")
+        try:
+            jpy_f = float(jpy_balance) if jpy_balance is not None else None
+        except (TypeError, ValueError):
+            jpy_f = None
+        total_assets_eod = row.get("total_assets_eod")
+        try:
+            total_f = float(total_assets_eod) if total_assets_eod is not None else None
+        except (TypeError, ValueError):
+            total_f = None
+        records.append(
+            {
+                "取引日": row.get("trading_day", ""),
+                "決済回数": settlements,
+                "勝": wins,
+                "敗": losses,
+                "実現損益": round(realized_f, 0),
+                "現金残高": "" if jpy_f is None else round(jpy_f, 0),
+                "総資産": "" if total_f is None else round(total_f, 0),
+            }
+        )
+        if len(records) >= limit:
+            break
+    return records
+
+
 def _is_state_fresh(updated_at: Optional[str]) -> bool:
     if not updated_at:
         return False
@@ -83,7 +141,17 @@ def _nightly_review_running() -> bool:
     return (time.time() - lock_mtime) <= AI_REVIEW_LOCK_FRESH_SEC
 
 
-def _launch_nightly_review() -> None:
+def _launch_nightly_review() -> bool:
+    """
+    Windows のみ run_nightly_review.ps1 をバックグラウンド起動する。
+    戻り値: 起動した場合 True、非 Windows でスキップした場合 False。
+    """
+    if platform.system() != "Windows":
+        print(
+            "[INFO] AI nightly review manual launch is not available in this container;"
+            " run it separately on the ai_review container."
+        )
+        return False
     create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(
         [
@@ -97,9 +165,21 @@ def _launch_nightly_review() -> None:
         ],
         creationflags=create_no_window,
     )
+    return True
 
 
-def _launch_ensure_engine_running() -> None:
+def _launch_ensure_engine_running() -> bool:
+    """
+    Windows のみ ensure_engine_running.ps1 をバックグラウンド起動する。
+    戻り値: 起動した場合 True、非 Windows でスキップした場合 False。
+    """
+    if platform.system() != "Windows":
+        print(
+            "[INFO] manual_stop.flag removed."
+            " Engine auto-start is not available in this container;"
+            " restart the engine container separately."
+        )
+        return False
     create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(
         [
@@ -113,6 +193,7 @@ def _launch_ensure_engine_running() -> None:
         ],
         creationflags=create_no_window,
     )
+    return True
 
 
 def _engine_status(state_row: Optional[Dict[str, object]]) -> str:
@@ -160,27 +241,24 @@ else:
 
 st.subheader("仮想ポートフォリオ")
 if state is not None:
-    bid = state.get("best_bid_price")
-    ask = state.get("best_ask_price")
-    mid = ((bid + ask) / 2.0) if (bid is not None and ask is not None) else 0.0
     jpy_balance = float(state.get("jpy_balance") or 0.0)
-    side = state.get("position_side")
-    entry_price = float(state.get("position_entry_price") or 0.0)
-    size = float(state.get("position_size") or 0.0)
-
-    if side == "LONG" and size > 0:
-        unrealized = size * mid
-    elif side == "SHORT" and size > 0 and entry_price > 0:
-        unrealized = (entry_price - mid) * size
-    else:
-        unrealized = 0.0
-
-    assets = jpy_balance + unrealized
+    assets = compute_total_assets_from_live_state(state)
     cumulative = float(state.get("cumulative_pnl") or 0.0)
+    daily_pnl = float(state.get("daily_realized_pnl") or 0.0)
+    daily_win = int(state.get("daily_win_count") or 0)
+    daily_loss = int(state.get("daily_loss_count") or 0)
     col_a, col_b, col_c = st.columns(3)
     col_a.metric("総資産 (円換算)", f"{assets:,.0f} 円")
-    col_b.metric("累積損益", f"{cumulative:+,.0f} 円")
-    col_c.metric("決済回数", f"{int(state.get('win_count') or 0) + int(state.get('loss_count') or 0)} 回")
+    col_b.metric("現金残高", f"{jpy_balance:,.0f} 円")
+    col_c.metric("累積損益", f"{cumulative:+,.0f} 円")
+    col_d, col_e, col_f = st.columns(3)
+    col_d.metric("決済回数", f"{int(state.get('win_count') or 0) + int(state.get('loss_count') or 0)} 回")
+    col_e.metric("本日の損益", f"{daily_pnl:+,.0f} 円")
+    col_f.metric(
+        "本日の決済回数",
+        f"{daily_win + daily_loss} 回",
+        f"勝 {daily_win} / 敗 {daily_loss}",
+    )
 else:
     st.info("エンジン状態を読み込み中です。")
 
@@ -259,6 +337,13 @@ if rows:
 else:
     st.info("当日の取引履歴はまだありません。")
 
+st.subheader("日次推移")
+daily_history = _load_daily_history(limit=14)
+if daily_history:
+    st.dataframe(daily_history, use_container_width=True)
+else:
+    st.info("データがありません")
+
 st.subheader("システム緊急制御")
 engine_status = _engine_status(state)
 manual_stop_requested = MANUAL_STOP_FLAG_PATH.exists()
@@ -270,6 +355,20 @@ if manual_stop_requested:
         st.success("手動停止状態: STOPPED（停止完了）")
     else:
         st.info("手動停止状態: 停止要求済み")
+
+    stop_reason_doc = None
+    if MANUAL_STOP_REASON_PATH.exists():
+        try:
+            stop_reason_doc = json.loads(MANUAL_STOP_REASON_PATH.read_text(encoding="utf-8"))
+        except Exception as exc:
+            st.warning(f"停止理由ファイル読み込みエラー: {exc}")
+    if isinstance(stop_reason_doc, dict):
+        reason_text = str(stop_reason_doc.get("reason", "unknown"))
+        triggered_at_text = str(stop_reason_doc.get("triggered_at", ""))
+        st.warning(f"停止理由: {reason_text}  発生時刻: {triggered_at_text}")
+        details = stop_reason_doc.get("details")
+        if isinstance(details, dict) and details:
+            st.json(details)
 else:
     if engine_status == "RUNNING" and fresh:
         st.success("エンジン状態: 稼働中")
@@ -281,14 +380,46 @@ else:
 stop_disabled = (engine_status == "STOPPING")
 if st.button("⏸ 緊急停止（安全決済）", disabled=stop_disabled):
     MANUAL_STOP_FLAG_PATH.write_text(datetime.now().isoformat(timespec="seconds"), encoding="utf-8")
+    try:
+        MANUAL_STOP_REASON_PATH.write_text(
+            json.dumps(
+                {
+                    "reason": "manual",
+                    "details": {},
+                    "triggered_at": datetime.now().isoformat(timespec="seconds"),
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        st.warning(f"停止理由ファイル書き込みエラー: {exc}")
     st.session_state["manual_stop_requested_epoch"] = time.time()
 
 resume_disabled = not MANUAL_STOP_FLAG_PATH.exists()
 if st.button("▶ 再開", disabled=resume_disabled):
     if MANUAL_STOP_FLAG_PATH.exists():
         MANUAL_STOP_FLAG_PATH.unlink()
-    _launch_ensure_engine_running()
+    try:
+        if MANUAL_STOP_REASON_PATH.exists():
+            MANUAL_STOP_REASON_PATH.unlink()
+    except Exception as exc:
+        st.warning(f"停止理由ファイル削除エラー: {exc}")
+    launched = _launch_ensure_engine_running()
     st.session_state["manual_resume_requested_epoch"] = time.time()
+    if not launched:
+        st.session_state["manual_resume_container_notice_epoch"] = time.time()
+
+resume_notice_epoch = st.session_state.get("manual_resume_container_notice_epoch")
+if isinstance(resume_notice_epoch, (int, float)):
+    if time.time() - float(resume_notice_epoch) <= AI_RETRY_NOTICE_SEC:
+        st.info(
+            "manual_stop.flag を削除しました。"
+            "この環境ではエンジンの自動起動は行われないため、"
+            "engine コンテナを別途再起動してください。"
+        )
+    else:
+        st.session_state.pop("manual_resume_container_notice_epoch", None)
 
 st.subheader("AI 夜間レビュー")
 nightly_running = _nightly_review_running()
@@ -299,8 +430,11 @@ else:
 
 retry_disabled = nightly_running
 if st.button("AI議論を再実行", disabled=retry_disabled):
-    _launch_nightly_review()
-    st.session_state["ai_retry_started_epoch"] = time.time()
+    launched = _launch_nightly_review()
+    if launched:
+        st.session_state["ai_retry_started_epoch"] = time.time()
+    else:
+        st.session_state["ai_retry_container_notice_epoch"] = time.time()
 
 retry_started_epoch = st.session_state.get("ai_retry_started_epoch")
 if isinstance(retry_started_epoch, (int, float)):
@@ -310,6 +444,16 @@ if isinstance(retry_started_epoch, (int, float)):
         st.info(f"{retry_started_dt.strftime('%H:%M')}にリトライを開始しました")
     else:
         st.session_state.pop("ai_retry_started_epoch", None)
+
+retry_notice_epoch = st.session_state.get("ai_retry_container_notice_epoch")
+if isinstance(retry_notice_epoch, (int, float)):
+    if time.time() - float(retry_notice_epoch) <= AI_RETRY_NOTICE_SEC:
+        st.info(
+            "この環境ではAI夜間レビューの手動起動は行えません。"
+            "ai_review コンテナ側で別途実行してください。"
+        )
+    else:
+        st.session_state.pop("ai_retry_container_notice_epoch", None)
 
 time.sleep(REFRESH_INTERVAL_SEC)
 st.rerun()

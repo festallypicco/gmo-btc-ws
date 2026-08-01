@@ -107,10 +107,10 @@ def test_insufficient_data_records_insufficient_confidence() -> None:
     assert row["provisional_evaluation"]["confidence"] == "insufficient"
 
 
-def test_before_window_spans_versions_until_previous_same_profile_change() -> None:
+def test_before_window_uses_config_version_match_like_after() -> None:
     """
-    対象プロファイル未変更の間に他プロファイルだけ変更され、
-    config_version が複数回変わっても before は時刻範囲で拾えることを確認。
+    before も after と同様に config_version で厳密一致する。
+    他プロファイル変更で version が変わった期間の取引は before に混入しない。
     """
     changes = [
         _change("n0", "2026-07-01T03:30:00", "night", "n-v1", "n-v0"),
@@ -123,6 +123,14 @@ def test_before_window_spans_versions_until_previous_same_profile_change() -> No
             "timestamp": datetime(2026, 7, 2, 0, 0, 0),
             "date": datetime(2026, 7, 2).date(),
             "config_version": "n-v1",
+            "profile_name": "night",
+            "reason": "STOP_LOSS",
+            "pnl": -5.0,
+        },
+        {
+            "timestamp": datetime(2026, 7, 8, 0, 0, 0),
+            "date": datetime(2026, 7, 8).date(),
+            "config_version": "n-v1",  # before_version 一致・7日窓内
             "profile_name": "night",
             "reason": "STOP_LOSS",
             "pnl": -10.0,
@@ -163,8 +171,9 @@ def test_before_window_spans_versions_until_previous_same_profile_change() -> No
     row = by_id["n1"]
     before = row["provisional_evaluation"]["before"]
     after = row["provisional_evaluation"]["after"]
-    assert before["trade_count"] == 2
-    assert before["total_pnl"] == 50.0
+    # before_version=n-v1 かつ時刻窓内は 7/8 の1件のみ。d-v1/d-v2 と窓外の 7/2 は除外。
+    assert before["trade_count"] == 1
+    assert before["total_pnl"] == -10.0
     assert after["trade_count"] == 1
     assert after["total_pnl"] == 40.0
 
@@ -175,7 +184,7 @@ def test_first_profile_change_has_no_effective_start_limit() -> None:
         {
                 "timestamp": datetime(2026, 7, 3, 12, 0, 0),
             "date": datetime(2026, 7, 3).date(),
-            "config_version": "legacy",
+            "config_version": "n-v1",
             "profile_name": "night",
             "reason": "STOP_LOSS",
             "pnl": -10.0,
@@ -183,7 +192,7 @@ def test_first_profile_change_has_no_effective_start_limit() -> None:
         {
             "timestamp": datetime(2026, 7, 9, 0, 0, 0),
             "date": datetime(2026, 7, 9).date(),
-            "config_version": "legacy2",
+            "config_version": "n-v1",
             "profile_name": "night",
             "reason": "TAKE_PROFIT",
             "pnl": 20.0,

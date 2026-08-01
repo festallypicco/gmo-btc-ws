@@ -90,6 +90,10 @@ class PositionState:
     size:               float = 0.0
     is_pending:         bool  = False          # True = 指値注文が未約定状態
     exit_price_target:  float = 0.0            # 利確指値価格（約定確認後に設定）
+    entry_order_id:     Optional[int] = None   # real mode エントリー注文ID（未実装時は None）
+    tp_order_id:        Optional[int] = None   # real mode 利確注文ID（未実装時は None）
+    sl_order_id:        Optional[int] = None   # real mode 損切り注文ID（未実装時は None）
+    position_id:        Optional[int] = None   # real mode GMO 建玉ID（未取得時は None）
 
 
 # =========================================================================== #

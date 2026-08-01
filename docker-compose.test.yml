@@ -9,7 +9,7 @@ services:
       - ./docker_test/config:/app/config
       - ./docker_test/log:/app/log
       - ./docker_test/runtime:/app/runtime
-    restart: "no"
+    restart: on-failure:5
 
   dashboard:
     image: gmo-btc-ws:latest
@@ -23,3 +23,4 @@ services:
       - "127.0.0.1:8501:8501"
     depends_on:
       - engine
+    restart: on-failure:5

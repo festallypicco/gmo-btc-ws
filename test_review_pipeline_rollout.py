@@ -380,3 +380,166 @@ def test_apply_daily_rollouts_removes_entry_on_final_day(rollout_paths: tuple) -
     saved = json.loads(config_path.read_text(encoding="utf-8"))
     assert saved["profiles"][0]["imbalance_entry_threshold"] == pytest.approx(0.70)
     assert saved["pending_rollouts"] == {}
+
+
+def test_apply_daily_rollouts_reverted_keeps_entry_and_day_index(
+    rollout_paths: tuple,
+) -> None:
+    config_path, update_log_path = rollout_paths
+    param_path = PARAM_PATH
+    pending = {
+        param_path: {
+            "start_value": 0.60,
+            "target_value": 1.00,
+            "current_applied_value": 0.60,
+            "start_date": "2026-07-09",
+            "day_index": 2,
+            "total_days": 3,
+            "rollout_ratios": list(ROLLOUT_RATIOS),
+            "direction": "up",
+            "reason": "test",
+            "status": "in_progress",
+        }
+    }
+    config_path.write_text(
+        json.dumps(_minimal_config(threshold=0.60, pending_rollouts=pending)),
+        encoding="utf-8",
+    )
+
+    apply_daily_rollouts()
+
+    saved = json.loads(config_path.read_text(encoding="utf-8"))
+    assert saved["profiles"][0]["imbalance_entry_threshold"] == pytest.approx(0.60)
+    assert param_path in saved["pending_rollouts"]
+    entry = saved["pending_rollouts"][param_path]
+    assert entry["status"] == "reverted"
+    assert entry["day_index"] == 2
+    assert entry["current_applied_value"] == pytest.approx(0.60)
+
+    lines = update_log_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    logged = json.loads(lines[0])
+    assert logged["value_before"] == pytest.approx(0.60)
+    assert logged["value_after"] == pytest.approx(0.60)
+
+
+def _sample_summary_for_prompt() -> Dict[str, Any]:
+    long_reason = "R" * 400 + " daily_target_order_size_btc clamp note"
+    return {
+        "target_date": "2026-07-14",
+        "current_config": {"version": "test", "profiles": []},
+        "recent_config_changes": [
+            {"timestamp": f"2026-07-{d:02d}T06:00:00", "reason": f"short-{d}"}
+            for d in range(10, 14)
+        ]
+        + [
+            {
+                "timestamp": "2026-07-14T06:00:00",
+                "reason": long_reason,
+            }
+        ],
+        "past_validation_failures": [],
+        "recent_change_outcomes": [],
+        "windows": {
+            "anomaly_check": {"requested_days": 1, "overall": {"trade_count": 1}},
+            "rule_review": {"requested_days": 14, "overall": {"trade_count": 10}},
+            "stability_check": {
+                "requested_days": 30,
+                "overall": {"trade_count": 20},
+                "weekly_breakdown": [
+                    {"week": "2026-W28", "trade_count": 5},
+                    {"week": "2026-W29", "trade_count": 7},
+                ],
+            },
+            "regime_reference": {
+                "requested_days": 90,
+                "actual_days": 10,
+                "blocks": [],
+                "summary": {"note": "ok"},
+            },
+        },
+    }
+
+
+def test_proposer_prompt_excludes_weekly_breakdown_but_skeptic_moderator_keep_it(
+    capsys,
+) -> None:
+    from prompts import (
+        _build_proposer_reduced_summary,
+        build_moderator_prompt,
+        build_proposer_prompt,
+        build_skeptic_prompt,
+    )
+
+    summary = _sample_summary_for_prompt()
+    # market_* を3窓に載せて、Proposerは14日のみ残すことを検証
+    market_stub = {"overall": {"trades_confidence": "low"}}
+    summary["windows"]["rule_review"]["market_trades"] = market_stub
+    summary["windows"]["rule_review"]["market_depth"] = {"overall": {"depth_confidence": "low"}}
+    summary["windows"]["rule_review"]["market_volatility"] = {
+        "overall": {"volatility_confidence": "low"}
+    }
+    summary["windows"]["stability_check"]["market_trades"] = market_stub
+    summary["windows"]["stability_check"]["market_depth"] = {
+        "overall": {"depth_confidence": "medium"}
+    }
+    summary["windows"]["stability_check"]["market_volatility"] = {
+        "overall": {"volatility_confidence": "medium"}
+    }
+    summary["windows"]["regime_reference"]["market_trades"] = market_stub
+    summary["windows"]["regime_reference"]["market_depth"] = {
+        "overall": {"depth_confidence": "insufficient"}
+    }
+    summary["windows"]["regime_reference"]["market_volatility"] = {
+        "overall": {"volatility_confidence": "insufficient"}
+    }
+
+    reduced = _build_proposer_reduced_summary(summary, failures_limit=5)
+    assert "weekly_breakdown" not in reduced["windows"]["stability_check"]
+    assert "overall" in reduced["windows"]["stability_check"]
+    assert "market_trades" in reduced["windows"]["rule_review"]
+    assert "market_depth" in reduced["windows"]["rule_review"]
+    assert "market_volatility" in reduced["windows"]["rule_review"]
+    assert "market_trades" not in reduced["windows"]["stability_check"]
+    assert "market_depth" not in reduced["windows"]["stability_check"]
+    assert "market_volatility" not in reduced["windows"]["stability_check"]
+    assert "market_trades" not in reduced["windows"]["regime_reference"]
+    assert "market_depth" not in reduced["windows"]["regime_reference"]
+    assert "market_volatility" not in reduced["windows"]["regime_reference"]
+
+    _, proposer_prompt = build_proposer_prompt(summary)
+    assert "weekly_breakdown" not in proposer_prompt
+
+    _, skeptic_prompt = build_skeptic_prompt(summary, "proposer stub")
+    assert "weekly_breakdown" in skeptic_prompt
+    assert "market_trades" in skeptic_prompt
+
+    _, moderator_prompt = build_moderator_prompt(
+        summary,
+        "proposer stub",
+        "skeptic stub",
+    )
+    assert "weekly_breakdown" in moderator_prompt
+    assert "market_depth" in moderator_prompt
+
+    out = capsys.readouterr().out
+    assert "proposer reduced_summary chars=" in out
+
+
+def test_proposer_recent_config_changes_limited_to_three_and_reason_truncated() -> None:
+    from prompts import _build_proposer_reduced_summary
+
+    summary = _sample_summary_for_prompt()
+    assert len(summary["recent_config_changes"]) == 5
+
+    reduced = _build_proposer_reduced_summary(summary, failures_limit=5)
+    changes = reduced["recent_config_changes"]
+    assert len(changes) == 3
+    assert changes[0]["timestamp"].startswith("2026-07-12")
+    assert changes[-1]["timestamp"].startswith("2026-07-14")
+
+    reason = changes[-1]["reason"]
+    assert isinstance(reason, str)
+    assert reason.endswith("...(truncated)")
+    assert len(reason) == 300 + len("...(truncated)")
+    assert "daily_target_order_size_btc" not in reason

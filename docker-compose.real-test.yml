@@ -1,0 +1,38 @@
+# real mode 疎通確認用の隔離 compose。本番・ネイティブ・docker-compose.test.yml とは別パスを使う。
+# ホストの .env を参照する（シークレットは本ファイルに書かない）。
+services:
+  engine:
+    build: .
+    image: gmo-btc-ws:latest
+    container_name: btc-engine-real-test
+    # Persist stdout/stderr under bind-mounted /app/log (host: log-real-test/)
+    # as engine_YYYY-MM-DD.log / engine_YYYY-MM-DD.err.log (same as native).
+    command: python -u scripts/run_engine_with_file_logs.py
+    env_file:
+      - .env
+    volumes:
+      - ./config-real-test:/app/config
+      - ./log-real-test:/app/log
+      - ./runtime-real-test:/app/runtime
+    restart: on-failure:5
+    environment:
+      - TZ=Asia/Tokyo
+      - PYTHONUNBUFFERED=1
+
+  dashboard:
+    image: gmo-btc-ws:latest
+    container_name: btc-dashboard-real-test
+    command: streamlit run btc_trading_tool/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    env_file:
+      - .env
+    volumes:
+      - ./config-real-test:/app/config
+      - ./log-real-test:/app/log
+      - ./runtime-real-test:/app/runtime
+    ports:
+      - "127.0.0.1:8502:8501"
+    depends_on:
+      - engine
+    restart: on-failure:5
+    environment:
+      - TZ=Asia/Tokyo

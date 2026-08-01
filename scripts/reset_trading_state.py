@@ -20,8 +20,8 @@ def main() -> int:
     backup_dir.mkdir(parents=True, exist_ok=True)
 
     if log_path.exists():
-        shutil.move(str(log_path), str(backup_dir / log_path.name))
-        print(f"[reset] archived log: {backup_dir / log_path.name}")
+        shutil.copy2(log_path, backup_dir / log_path.name)
+        print(f"[reset] copied log to backup: {backup_dir / log_path.name}")
 
     if DB_PATH.exists():
         shutil.copy2(DB_PATH, backup_dir / "live_state.db.before_reset")
@@ -41,8 +41,12 @@ def main() -> int:
             win_count INTEGER, loss_count INTEGER,
             total_gross_win REAL, total_gross_loss REAL, cumulative_pnl REAL,
             active_profile_name TEXT,
+            engine_status TEXT,
             config_version TEXT,
-            ws_connected INTEGER
+            ws_connected INTEGER,
+            trading_day_date TEXT,
+            daily_start_balance REAL,
+            daily_realized_pnl REAL
         )
         """
     )
@@ -55,12 +59,14 @@ def main() -> int:
             position_side, position_entry_price, position_size,
             position_is_pending, position_exit_target,
             win_count, loss_count, total_gross_win, total_gross_loss, cumulative_pnl,
-            active_profile_name, config_version, ws_connected
+            active_profile_name, engine_status, config_version, ws_connected,
+            trading_day_date, daily_start_balance, daily_realized_pnl
         ) VALUES (
             1, ?, NULL, NULL, NULL, NULL, ?,
             NULL, NULL, NULL, 0, NULL,
             0, 0, 0.0, 0.0, 0.0,
-            NULL, 'reset', 0
+            NULL, NULL, 'reset', 0,
+            NULL, NULL, NULL
         )
         """,
         (datetime.now().isoformat(timespec="seconds"), INITIAL_JPY),

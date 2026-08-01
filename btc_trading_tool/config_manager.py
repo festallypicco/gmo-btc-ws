@@ -27,6 +27,10 @@ DEFAULT_ORDER_RATE_LIMIT_PER_MINUTE = 5
 DEFAULT_RECONCILIATION_INTERVAL_MINUTES = 5
 DEFAULT_RECONCILIATION_TOLERANCE_BTC = 0.0005
 DEFAULT_RECONCILIATION_TOLERANCE_JPY = 100.0
+DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.10
+DEFAULT_TRADING_MODE = "virtual"
+DEFAULT_INITIAL_JPY = 50_000.0
+ALLOWED_TRADING_MODES = frozenset({"virtual", "real"})
 
 # review_pipeline.py の段階適用(pending_rollouts)用。profiles.<name>.<param> のみ想定。
 DEFAULT_PENDING_ROLLOUTS: Dict[str, Any] = {}
@@ -56,7 +60,7 @@ PARAMETER_ABSOLUTE_BOUNDS: Dict[str, Tuple[float, float]] = {
     "take_profit_pct": (0.0005, 0.0050),
     "stop_loss_pct": (0.0005, 0.0050),
     "maker_price_offset_jpy": (0.0, 10.0),
-    "max_order_size_btc": (0.01, 0.20),
+    "max_order_size_btc": (0.001, 0.20),
     "daily_target_order_size_btc": (0.001, 0.05),
 }
 
@@ -80,6 +84,9 @@ def default_config_payload() -> Dict[str, Any]:
         "reconciliation_interval_minutes": DEFAULT_RECONCILIATION_INTERVAL_MINUTES,
         "reconciliation_tolerance_btc": DEFAULT_RECONCILIATION_TOLERANCE_BTC,
         "reconciliation_tolerance_jpy": DEFAULT_RECONCILIATION_TOLERANCE_JPY,
+        "daily_loss_limit_pct": DEFAULT_DAILY_LOSS_LIMIT_PCT,
+        "trading_mode": DEFAULT_TRADING_MODE,
+        "initial_jpy": DEFAULT_INITIAL_JPY,
         "pending_rollouts": {},
         "profiles": [_build_default_profile()],
     }
@@ -107,6 +114,15 @@ def apply_engine_safety_defaults(payload: Dict[str, Any]) -> Dict[str, Any]:
     normalized.setdefault("reconciliation_interval_minutes", DEFAULT_RECONCILIATION_INTERVAL_MINUTES)
     normalized.setdefault("reconciliation_tolerance_btc", DEFAULT_RECONCILIATION_TOLERANCE_BTC)
     normalized.setdefault("reconciliation_tolerance_jpy", DEFAULT_RECONCILIATION_TOLERANCE_JPY)
+    normalized.setdefault("daily_loss_limit_pct", DEFAULT_DAILY_LOSS_LIMIT_PCT)
+    normalized.setdefault("trading_mode", DEFAULT_TRADING_MODE)
+    normalized.setdefault("initial_jpy", DEFAULT_INITIAL_JPY)
+    trading_mode = normalized.get("trading_mode")
+    if trading_mode not in ALLOWED_TRADING_MODES:
+        raise ConfigValidationError(
+            f"trading_mode は 'virtual' または 'real' である必要があります: {trading_mode!r}"
+        )
+    normalized["trading_mode"] = trading_mode
     normalized["order_rate_limit_per_minute"] = _as_positive_int(
         normalized.get("order_rate_limit_per_minute"),
         DEFAULT_ORDER_RATE_LIMIT_PER_MINUTE,
@@ -122,6 +138,14 @@ def apply_engine_safety_defaults(payload: Dict[str, Any]) -> Dict[str, Any]:
     normalized["reconciliation_tolerance_jpy"] = _as_positive_float(
         normalized.get("reconciliation_tolerance_jpy"),
         DEFAULT_RECONCILIATION_TOLERANCE_JPY,
+    )
+    normalized["daily_loss_limit_pct"] = _as_positive_float(
+        normalized.get("daily_loss_limit_pct"),
+        DEFAULT_DAILY_LOSS_LIMIT_PCT,
+    )
+    normalized["initial_jpy"] = _as_positive_float(
+        normalized.get("initial_jpy"),
+        DEFAULT_INITIAL_JPY,
     )
     pending_rollouts = normalized.get("pending_rollouts")
     if not isinstance(pending_rollouts, dict):
@@ -271,6 +295,9 @@ def payload_to_history_snapshot(payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "reconciliation_tolerance_jpy": payload.get(
             "reconciliation_tolerance_jpy", DEFAULT_RECONCILIATION_TOLERANCE_JPY
+        ),
+        "daily_loss_limit_pct": payload.get(
+            "daily_loss_limit_pct", DEFAULT_DAILY_LOSS_LIMIT_PCT
         ),
         "pending_rollouts": payload.get("pending_rollouts", {}),
         "profiles": payload.get("profiles", []),

@@ -1,0 +1,9 @@
+[Unit]
+Description=BTC trading engine crash-loop check
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gmo-btc-ws
+ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_crash_loop_check.sh

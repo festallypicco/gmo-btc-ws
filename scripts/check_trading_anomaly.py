@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,6 +15,8 @@ from telegram_notifier import send_telegram_message
 ROOT_DIR = Path(__file__).resolve().parent.parent
 LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
 STATE_PATH = Path(__file__).resolve().parent.parent / "runtime" / "anomaly_state.json"
+HEARTBEATS_PATH = ROOT_DIR / "runtime" / "monitor_heartbeats.json"
+HEARTBEAT_KEY = "check_trading_anomaly"
 
 # ---- Thresholds (tune later if needed) -------------------------------------
 MAX_TRADES_PER_HOUR = 60.0
@@ -42,6 +45,25 @@ def _setup_logging() -> None:
         format="[%(asctime)s] [%(levelname)s] [anomaly_check] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+
+def _record_monitor_heartbeat() -> None:
+    HEARTBEATS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    data: Dict[str, Any] = {}
+    if HEARTBEATS_PATH.exists():
+        try:
+            loaded = json.loads(HEARTBEATS_PATH.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
+        except Exception as exc:
+            LOGGER.warning("Failed to read heartbeats file; recreating: %s", exc)
+    data[HEARTBEAT_KEY] = datetime.now().isoformat(timespec="seconds")
+    tmp_path = HEARTBEATS_PATH.with_suffix(HEARTBEATS_PATH.suffix + ".tmp")
+    tmp_path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    os.replace(tmp_path, HEARTBEATS_PATH)
 
 
 def _parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
@@ -164,6 +186,7 @@ def main() -> int:
         init_state = _default_state(current)
         _save_state(init_state)
         LOGGER.info("Initial run: anomaly_state.json created and alert check skipped.")
+        _record_monitor_heartbeat()
         return 0
 
     prev_checked = _parse_iso_datetime(state.get("last_checked_at"))
@@ -173,6 +196,7 @@ def main() -> int:
         baseline["last_alert_trades_at"] = state.get("last_alert_trades_at")
         baseline["last_alert_pnl_at"] = state.get("last_alert_pnl_at")
         _save_state(baseline)
+        _record_monitor_heartbeat()
         return 0
 
     prev_total_trades = int(state.get("last_win_count", 0)) + int(state.get("last_loss_count", 0))
@@ -182,6 +206,7 @@ def main() -> int:
         )
         baseline = _default_state(current)
         _save_state(baseline)
+        _record_monitor_heartbeat()
         return 0
 
     prev_cumulative_pnl = float(state.get("last_cumulative_pnl", 0.0))
@@ -202,6 +227,7 @@ def main() -> int:
     if elapsed_hours < 0.1:
         LOGGER.info("Elapsed time %.3f h is too short. Alert judgement skipped.", elapsed_hours)
         _save_state(next_state)
+        _record_monitor_heartbeat()
         return 0
 
     trades_per_hour = delta_trades / elapsed_hours
@@ -234,6 +260,7 @@ def main() -> int:
             LOGGER.info("PnL anomaly detected but still in cooldown window.")
 
     _save_state(next_state)
+    _record_monitor_heartbeat()
     return 0
 
 

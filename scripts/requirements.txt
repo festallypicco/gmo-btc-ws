@@ -1,0 +1,6 @@
+# Dependencies for host-side scheduled scripts (Task Scheduler).
+# build_public_report.py posts the public daily report to X (Twitter) via OAuth 1.0a.
+tweepy>=4.14.0
+# SNS Instagram reel video (PIL frames + ffmpeg encode)
+Pillow>=10.0.0
+imageio-ffmpeg>=0.5.0

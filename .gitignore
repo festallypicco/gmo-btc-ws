@@ -26,6 +26,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+.venv-host/
 # OS/エディタ
 .DS_Store
 Thumbs.db
@@ -36,3 +37,10 @@ back/
 btc_trading_tool/back/
 # Docker検証用の隔離データ
 docker_test/
+# real mode 疎通確認用の隔離データ（config-real-test は追跡対象）
+log-real-test/
+runtime-real-test/
+# VPS移行前のログ永続化・PYTHONUNBUFFERED確認用の使い捨て検証データ
+config-verify/
+log-verify/
+runtime-verify/

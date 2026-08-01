@@ -21,6 +21,8 @@ if str(AI_REVIEW_DIR) not in sys.path:
 
 from telegram_notifier import send_telegram_message
 
+from profile_config import parse_hhmm_to_minute  # noqa: E402
+
 LOG_DIR = PROJECT_ROOT / "log"
 CONFIG_PATH = PROJECT_ROOT / "config" / "config.json"
 CONFIG_HISTORY_PATH = LOG_DIR / "config_history.jsonl"
@@ -65,6 +67,13 @@ def mean_or_none(values: Iterable[float]) -> Optional[float]:
     if not values:
         return None
     return statistics.mean(values)
+
+
+def max_or_none(values: Iterable[float]) -> Optional[float]:
+    values = list(values)
+    if not values:
+        return None
+    return max(values)
 
 
 def stdev_or_none(values: Iterable[float]) -> Optional[float]:
@@ -269,9 +278,88 @@ def add_weekly_breakdown(window_summary: Dict[str, Any], target_date: date) -> N
     window_summary["weekly_breakdown"] = weekly_breakdown
 
 
-def load_market_rows(dates: List[date]) -> Tuple[List[Dict[str, Any]], Set[date]]:
+def classify_trades_confidence(
+    total_trade_count: int,
+    trades_actual_days: int,
+    requested_days: int,
+) -> str:
+    """market_snapshot の trades 列に基づく信頼度（既存 confidence とは独立）。"""
+    return classify_confidence(total_trade_count, trades_actual_days, requested_days)
+
+
+def classify_depth_confidence(
+    snapshot_count: int,
+    depth_actual_days: int,
+    requested_days: int,
+) -> str:
+    """market_snapshot の depth5 列に基づく信頼度（既存 confidence / trades_confidence とは独立）。"""
+    return classify_confidence(snapshot_count, depth_actual_days, requested_days)
+
+
+def classify_volatility_confidence(
+    snapshot_count: int,
+    volatility_actual_days: int,
+    requested_days: int,
+) -> str:
+    """market_snapshot の volatility 列に基づく信頼度（既存 confidence 群とは独立）。"""
+    return classify_confidence(snapshot_count, volatility_actual_days, requested_days)
+
+
+def safe_optional_float(value: Any) -> Optional[float]:
+    text = str(value if value is not None else "").strip()
+    if text == "" or text.lower() in {"null", "none", "nan"}:
+        return None
+    try:
+        return float(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_snapshot_timestamp(raw: Any) -> Optional[datetime]:
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def _row_in_profile_window(row: Dict[str, Any], start_minute: int, end_minute: int) -> bool:
+    ts = _parse_snapshot_timestamp(row.get("timestamp"))
+    if ts is None:
+        return False
+    minute = ts.hour * 60 + ts.minute
+    return start_minute <= minute < end_minute
+
+
+def load_market_rows(
+    dates: List[date],
+) -> Tuple[List[Dict[str, Any]], Set[date], Set[date], Set[date], Set[date]]:
+    """
+    market_snapshot CSV を読み込む。
+
+    Returns:
+        rows: スナップショット行（trades/depth/volatility 列がある日のみ該当フィールドを付与）
+        actual_days: CSV ファイルが存在した日
+        trades_days: trade_count/buy_volume/sell_volume 列が存在した日
+        depth_days: bid_depth5_size/ask_depth5_size/depth_imbalance 列が存在した日
+        volatility_days: volatility_5min_range_pct 列が存在した日
+    """
     rows: List[Dict[str, Any]] = []
     actual_days: Set[date] = set()
+    trades_days: Set[date] = set()
+    depth_days: Set[date] = set()
+    volatility_days: Set[date] = set()
+    trades_columns = ("trade_count", "buy_volume", "sell_volume")
+    depth_columns = ("bid_depth5_size", "ask_depth5_size", "depth_imbalance")
+    volatility_column = "volatility_5min_range_pct"
+
     for d in dates:
         path = LOG_DIR / f"market_snapshot_{d.isoformat()}.csv"
         if not path.exists():
@@ -279,24 +367,377 @@ def load_market_rows(dates: List[date]) -> Tuple[List[Dict[str, Any]], Set[date]
         try:
             with path.open("r", newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
+                fieldnames = reader.fieldnames or []
+                has_trades_cols = all(col in fieldnames for col in trades_columns)
+                has_depth_cols = all(col in fieldnames for col in depth_columns)
+                has_volatility_col = volatility_column in fieldnames
                 for row in reader:
-                    rows.append(
-                        {
-                            "date": d,
-                            "mid_price": safe_float(row.get("mid_price"), 0.0),
-                            "spread_pct": safe_float(row.get("spread_pct"), 0.0),
-                            "imbalance": safe_float(row.get("imbalance"), 0.0),
-                        }
-                    )
+                    parsed: Dict[str, Any] = {
+                        "date": d,
+                        "timestamp": str(row.get("timestamp") or "").strip(),
+                        "mid_price": safe_float(row.get("mid_price"), 0.0),
+                        "spread_pct": safe_float(row.get("spread_pct"), 0.0),
+                        "imbalance": safe_float(row.get("imbalance"), 0.0),
+                        "has_trades_data": has_trades_cols,
+                        "has_depth_data": has_depth_cols,
+                        "has_volatility_data": has_volatility_col,
+                    }
+                    if has_trades_cols:
+                        parsed["trade_count"] = safe_int(row.get("trade_count"), 0)
+                        parsed["buy_volume"] = safe_float(row.get("buy_volume"), 0.0)
+                        parsed["sell_volume"] = safe_float(row.get("sell_volume"), 0.0)
+                    if has_depth_cols:
+                        parsed["bid_depth5_size"] = safe_float(
+                            row.get("bid_depth5_size"), 0.0
+                        )
+                        parsed["ask_depth5_size"] = safe_float(
+                            row.get("ask_depth5_size"), 0.0
+                        )
+                        parsed["depth_imbalance"] = safe_optional_float(
+                            row.get("depth_imbalance")
+                        )
+                    if has_volatility_col:
+                        parsed["volatility_5min_range_pct"] = safe_optional_float(
+                            row.get(volatility_column)
+                        )
+                    rows.append(parsed)
             actual_days.add(d)
+            if has_trades_cols:
+                trades_days.add(d)
+            if has_depth_cols:
+                depth_days.add(d)
+            if has_volatility_col:
+                volatility_days.add(d)
         except Exception as exc:
             warn(f"相場スナップショットの読み込みに失敗。日次をスキップします: {path.name} ({exc})")
-    return rows, actual_days
+    return rows, actual_days, trades_days, depth_days, volatility_days
+
+
+def summarize_market_trades_group(
+    rows: List[Dict[str, Any]],
+    trades_days: Set[date],
+    requested_days: int,
+    window_dates: Set[date],
+) -> Dict[str, Any]:
+    """
+  trades 列が存在した日のスナップショットのみ集計する。
+  列が無い日は「データ無し」として合計・比率から除外する。
+    """
+    eligible_dates = trades_days & window_dates
+    trades_actual_days = len(eligible_dates)
+    eligible_rows = [
+        r for r in rows
+        if r.get("has_trades_data") and r.get("date") in eligible_dates
+    ]
+
+    if not eligible_rows:
+        return {
+            "requested_days": requested_days,
+            "trades_actual_days": trades_actual_days,
+            "trades_confidence": classify_trades_confidence(
+                0, trades_actual_days, requested_days
+            ),
+            "buy_volume_total": None,
+            "sell_volume_total": None,
+            "buy_ratio": None,
+            "avg_trade_count_per_snapshot": None,
+        }
+
+    buy_total = sum(float(r.get("buy_volume") or 0.0) for r in eligible_rows)
+    sell_total = sum(float(r.get("sell_volume") or 0.0) for r in eligible_rows)
+    trade_count_total = sum(int(r.get("trade_count") or 0) for r in eligible_rows)
+    volume_sum = buy_total + sell_total
+    buy_ratio = (buy_total / volume_sum) if volume_sum > 0 else None
+    avg_trade_count = trade_count_total / len(eligible_rows)
+
+    return {
+        "requested_days": requested_days,
+        "trades_actual_days": trades_actual_days,
+        "trades_confidence": classify_trades_confidence(
+            trade_count_total, trades_actual_days, requested_days
+        ),
+        "buy_volume_total": buy_total,
+        "sell_volume_total": sell_total,
+        "buy_ratio": buy_ratio,
+        "avg_trade_count_per_snapshot": avg_trade_count,
+    }
+
+
+def build_market_trades_summary(
+    target_date: date,
+    requested_days: int,
+    profiles: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    dates = daterange_desc(target_date, requested_days)
+    window_dates = set(dates)
+    rows, _actual_days, trades_days, _depth_days, _volatility_days = load_market_rows(dates)
+
+    overall = summarize_market_trades_group(
+        rows=rows,
+        trades_days=trades_days,
+        requested_days=requested_days,
+        window_dates=window_dates,
+    )
+
+    per_profile: Dict[str, Any] = {}
+    profile_names = [
+        str(p.get("name"))
+        for p in profiles
+        if isinstance(p, dict) and p.get("name")
+    ]
+    for profile in profiles:
+        if not isinstance(profile, dict) or not profile.get("name"):
+            continue
+        name = str(profile["name"])
+        try:
+            start_min = parse_hhmm_to_minute(str(profile.get("start_time", "00:00")))
+            end_min = parse_hhmm_to_minute(str(profile.get("end_time", "24:00")))
+        except ValueError as exc:
+            warn(f"profile '{name}' の時刻範囲が不正のため trades 集計をスキップ: {exc}")
+            continue
+        profile_rows = [
+            r for r in rows
+            if r.get("has_trades_data") and _row_in_profile_window(r, start_min, end_min)
+        ]
+        per_profile[name] = summarize_market_trades_group(
+            rows=profile_rows,
+            trades_days=trades_days,
+            requested_days=requested_days,
+            window_dates=window_dates,
+        )
+
+    for name in sorted(set(profile_names) - set(per_profile.keys())):
+        per_profile[name] = summarize_market_trades_group(
+            rows=[],
+            trades_days=trades_days,
+            requested_days=requested_days,
+            window_dates=window_dates,
+        )
+
+    return {
+        "requested_days": requested_days,
+        "overall": overall,
+        "per_profile": per_profile,
+    }
+
+
+def summarize_market_depth_group(
+    rows: List[Dict[str, Any]],
+    depth_days: Set[date],
+    requested_days: int,
+    window_dates: Set[date],
+) -> Dict[str, Any]:
+    """
+    depth5 列が存在した日のスナップショットのみ集計する。
+    列が無い日は「データ無し」として平均から除外する。
+    depth_imbalance が null の行は imbalance 平均のみから除外する。
+    """
+    eligible_dates = depth_days & window_dates
+    depth_actual_days = len(eligible_dates)
+    eligible_rows = [
+        r for r in rows
+        if r.get("has_depth_data") and r.get("date") in eligible_dates
+    ]
+
+    if not eligible_rows:
+        return {
+            "requested_days": requested_days,
+            "depth_actual_days": depth_actual_days,
+            "depth_confidence": classify_depth_confidence(
+                0, depth_actual_days, requested_days
+            ),
+            "avg_bid_depth5_size": None,
+            "avg_ask_depth5_size": None,
+            "avg_depth_imbalance": None,
+        }
+
+    bid_values = [float(r.get("bid_depth5_size") or 0.0) for r in eligible_rows]
+    ask_values = [float(r.get("ask_depth5_size") or 0.0) for r in eligible_rows]
+    imbalance_values = [
+        float(v)
+        for r in eligible_rows
+        for v in [r.get("depth_imbalance")]
+        if v is not None
+    ]
+
+    return {
+        "requested_days": requested_days,
+        "depth_actual_days": depth_actual_days,
+        "depth_confidence": classify_depth_confidence(
+            len(eligible_rows), depth_actual_days, requested_days
+        ),
+        "avg_bid_depth5_size": mean_or_none(bid_values),
+        "avg_ask_depth5_size": mean_or_none(ask_values),
+        "avg_depth_imbalance": mean_or_none(imbalance_values),
+    }
+
+
+def build_market_depth_summary(
+    target_date: date,
+    requested_days: int,
+    profiles: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    dates = daterange_desc(target_date, requested_days)
+    window_dates = set(dates)
+    rows, _actual_days, _trades_days, depth_days, _volatility_days = load_market_rows(dates)
+
+    overall = summarize_market_depth_group(
+        rows=rows,
+        depth_days=depth_days,
+        requested_days=requested_days,
+        window_dates=window_dates,
+    )
+
+    per_profile: Dict[str, Any] = {}
+    profile_names = [
+        str(p.get("name"))
+        for p in profiles
+        if isinstance(p, dict) and p.get("name")
+    ]
+    for profile in profiles:
+        if not isinstance(profile, dict) or not profile.get("name"):
+            continue
+        name = str(profile["name"])
+        try:
+            start_min = parse_hhmm_to_minute(str(profile.get("start_time", "00:00")))
+            end_min = parse_hhmm_to_minute(str(profile.get("end_time", "24:00")))
+        except ValueError as exc:
+            warn(f"profile '{name}' の時刻範囲が不正のため depth 集計をスキップ: {exc}")
+            continue
+        profile_rows = [
+            r for r in rows
+            if r.get("has_depth_data") and _row_in_profile_window(r, start_min, end_min)
+        ]
+        per_profile[name] = summarize_market_depth_group(
+            rows=profile_rows,
+            depth_days=depth_days,
+            requested_days=requested_days,
+            window_dates=window_dates,
+        )
+
+    for name in sorted(set(profile_names) - set(per_profile.keys())):
+        per_profile[name] = summarize_market_depth_group(
+            rows=[],
+            depth_days=depth_days,
+            requested_days=requested_days,
+            window_dates=window_dates,
+        )
+
+    return {
+        "requested_days": requested_days,
+        "overall": overall,
+        "per_profile": per_profile,
+    }
+
+
+def summarize_market_volatility_group(
+    rows: List[Dict[str, Any]],
+    volatility_days: Set[date],
+    requested_days: int,
+    window_dates: Set[date],
+) -> Dict[str, Any]:
+    """
+    volatility_5min_range_pct 列が存在した日のスナップショットのみ集計する。
+    列が無い日は「データ無し」として除外する。
+    列はあるが値が null の行は平均・最大の計算から除外する。
+    """
+    eligible_dates = volatility_days & window_dates
+    volatility_actual_days = len(eligible_dates)
+    eligible_rows = [
+        r for r in rows
+        if r.get("has_volatility_data") and r.get("date") in eligible_dates
+    ]
+
+    values = [
+        float(v)
+        for r in eligible_rows
+        for v in [r.get("volatility_5min_range_pct")]
+        if v is not None
+    ]
+
+    if not eligible_rows:
+        return {
+            "requested_days": requested_days,
+            "volatility_actual_days": volatility_actual_days,
+            "volatility_confidence": classify_volatility_confidence(
+                0, volatility_actual_days, requested_days
+            ),
+            "avg_volatility_5min_range_pct": None,
+            "max_volatility_5min_range_pct": None,
+        }
+
+    return {
+        "requested_days": requested_days,
+        "volatility_actual_days": volatility_actual_days,
+        "volatility_confidence": classify_volatility_confidence(
+            len(values), volatility_actual_days, requested_days
+        ),
+        "avg_volatility_5min_range_pct": mean_or_none(values),
+        "max_volatility_5min_range_pct": max_or_none(values),
+    }
+
+
+def build_market_volatility_summary(
+    target_date: date,
+    requested_days: int,
+    profiles: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    dates = daterange_desc(target_date, requested_days)
+    window_dates = set(dates)
+    rows, _actual_days, _trades_days, _depth_days, volatility_days = load_market_rows(dates)
+
+    overall = summarize_market_volatility_group(
+        rows=rows,
+        volatility_days=volatility_days,
+        requested_days=requested_days,
+        window_dates=window_dates,
+    )
+
+    per_profile: Dict[str, Any] = {}
+    profile_names = [
+        str(p.get("name"))
+        for p in profiles
+        if isinstance(p, dict) and p.get("name")
+    ]
+    for profile in profiles:
+        if not isinstance(profile, dict) or not profile.get("name"):
+            continue
+        name = str(profile["name"])
+        try:
+            start_min = parse_hhmm_to_minute(str(profile.get("start_time", "00:00")))
+            end_min = parse_hhmm_to_minute(str(profile.get("end_time", "24:00")))
+        except ValueError as exc:
+            warn(f"profile '{name}' の時刻範囲が不正のため volatility 集計をスキップ: {exc}")
+            continue
+        profile_rows = [
+            r for r in rows
+            if r.get("has_volatility_data") and _row_in_profile_window(r, start_min, end_min)
+        ]
+        per_profile[name] = summarize_market_volatility_group(
+            rows=profile_rows,
+            volatility_days=volatility_days,
+            requested_days=requested_days,
+            window_dates=window_dates,
+        )
+
+    for name in sorted(set(profile_names) - set(per_profile.keys())):
+        per_profile[name] = summarize_market_volatility_group(
+            rows=[],
+            volatility_days=volatility_days,
+            requested_days=requested_days,
+            window_dates=window_dates,
+        )
+
+    return {
+        "requested_days": requested_days,
+        "overall": overall,
+        "per_profile": per_profile,
+    }
 
 
 def build_regime_reference(target_date: date, requested_days: int = 90) -> Dict[str, Any]:
     dates = daterange_desc(target_date, requested_days)
-    rows, actual_day_set = load_market_rows(dates)
+    rows, actual_day_set, _trades_days, _depth_days, _volatility_days = load_market_rows(dates)
     trade_rows, _ = load_trade_rows(dates)
 
     by_day: Dict[date, List[Dict[str, Any]]] = defaultdict(list)
@@ -446,11 +887,11 @@ def main() -> int:
     recent_config_changes = read_jsonl_tail(CONFIG_HISTORY_PATH, limit=5)
     past_validation_failures = read_jsonl_tail(VALIDATION_FAILURES_PATH, limit=5)
     recent_change_outcomes = read_jsonl_tail(CHANGE_OUTCOMES_PATH, limit=5)
-    profile_names = [
-        str(p.get("name"))
-        for p in (current_config or {}).get("profiles", [])
+    profile_defs = [
+        p for p in (current_config or {}).get("profiles", [])
         if isinstance(p, dict) and p.get("name")
     ]
+    profile_names = [str(p.get("name")) for p in profile_defs]
 
     anomaly_window = build_trade_window_summary(target_date, requested_days=1, profile_names=profile_names)
     anomaly_window["usage_note"] = "この窓は異常検知専用。単体でルール変更の判断材料にしないこと。"
@@ -460,11 +901,38 @@ def main() -> int:
     rule_review_window = build_trade_window_summary(target_date, requested_days=14, profile_names=profile_names)
     rule_review_window.pop("_rows", None)
     rule_review_window.pop("_actual_day_set", None)
+    rule_review_window["market_trades"] = build_market_trades_summary(
+        target_date, requested_days=14, profiles=profile_defs
+    )
+    rule_review_window["market_depth"] = build_market_depth_summary(
+        target_date, requested_days=14, profiles=profile_defs
+    )
+    rule_review_window["market_volatility"] = build_market_volatility_summary(
+        target_date, requested_days=14, profiles=profile_defs
+    )
 
     stability_window = build_trade_window_summary(target_date, requested_days=30, profile_names=profile_names)
     add_weekly_breakdown(stability_window, target_date=target_date)
+    stability_window["market_trades"] = build_market_trades_summary(
+        target_date, requested_days=30, profiles=profile_defs
+    )
+    stability_window["market_depth"] = build_market_depth_summary(
+        target_date, requested_days=30, profiles=profile_defs
+    )
+    stability_window["market_volatility"] = build_market_volatility_summary(
+        target_date, requested_days=30, profiles=profile_defs
+    )
 
     regime_reference_window = build_regime_reference(target_date, requested_days=90)
+    regime_reference_window["market_trades"] = build_market_trades_summary(
+        target_date, requested_days=90, profiles=profile_defs
+    )
+    regime_reference_window["market_depth"] = build_market_depth_summary(
+        target_date, requested_days=90, profiles=profile_defs
+    )
+    regime_reference_window["market_volatility"] = build_market_volatility_summary(
+        target_date, requested_days=90, profiles=profile_defs
+    )
 
     output = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
