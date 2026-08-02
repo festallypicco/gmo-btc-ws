@@ -171,14 +171,10 @@ def _launch_nightly_review() -> bool:
 def _launch_ensure_engine_running() -> bool:
     """
     Windows のみ ensure_engine_running.ps1 をバックグラウンド起動する。
+    Docker/Linux では同一プロセスが PAUSED 待機から復帰するため起動不要。
     戻り値: 起動した場合 True、非 Windows でスキップした場合 False。
     """
     if platform.system() != "Windows":
-        print(
-            "[INFO] manual_stop.flag removed."
-            " Engine auto-start is not available in this container;"
-            " restart the engine container separately."
-        )
         return False
     create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(
@@ -200,7 +196,7 @@ def _engine_status(state_row: Optional[Dict[str, object]]) -> str:
     if state_row is None:
         return "RUNNING"
     raw = str(state_row.get("engine_status") or "RUNNING").strip().upper()
-    if raw in {"RUNNING", "STOPPING", "STOPPED"}:
+    if raw in {"RUNNING", "STOPPING", "STOPPED", "PAUSED"}:
         return raw
     return "RUNNING"
 
@@ -351,6 +347,8 @@ manual_stop_requested = MANUAL_STOP_FLAG_PATH.exists()
 if manual_stop_requested:
     if engine_status == "STOPPING":
         st.warning("手動停止状態: STOPPING（決済処理中）")
+    elif engine_status == "PAUSED":
+        st.success("手動停止状態: PAUSED（緊急停止中・再開待ち）")
     elif engine_status == "STOPPED":
         st.success("手動停止状態: STOPPED（停止完了）")
     else:
@@ -405,21 +403,8 @@ if st.button("▶ 再開", disabled=resume_disabled):
             MANUAL_STOP_REASON_PATH.unlink()
     except Exception as exc:
         st.warning(f"停止理由ファイル削除エラー: {exc}")
-    launched = _launch_ensure_engine_running()
+    _launch_ensure_engine_running()
     st.session_state["manual_resume_requested_epoch"] = time.time()
-    if not launched:
-        st.session_state["manual_resume_container_notice_epoch"] = time.time()
-
-resume_notice_epoch = st.session_state.get("manual_resume_container_notice_epoch")
-if isinstance(resume_notice_epoch, (int, float)):
-    if time.time() - float(resume_notice_epoch) <= AI_RETRY_NOTICE_SEC:
-        st.info(
-            "manual_stop.flag を削除しました。"
-            "この環境ではエンジンの自動起動は行われないため、"
-            "engine コンテナを別途再起動してください。"
-        )
-    else:
-        st.session_state.pop("manual_resume_container_notice_epoch", None)
 
 st.subheader("AI 夜間レビュー")
 nightly_running = _nightly_review_running()

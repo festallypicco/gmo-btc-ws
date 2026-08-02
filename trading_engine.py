@@ -74,6 +74,8 @@ CONFIG_CACHE_PATH = CONFIG_DIR / "last_loaded_config.json"
 CONFIG_HISTORY_PATH = LOG_DIR / "config_history.jsonl"
 MANUAL_STOP_FLAG_PATH = ROOT_DIR / "runtime" / "manual_stop.flag"
 MANUAL_STOP_REASON_PATH = ROOT_DIR / "runtime" / "manual_stop_reason.json"
+MANUAL_STOP_PAUSE_POLL_SEC = 5
+MANUAL_STOP_STILL_PAUSED_NOTIFY_SEC = 24 * 3600
 
 _order_event_timestamps: list[float] = []
 _order_rate_lock = threading.Lock()
@@ -346,6 +348,58 @@ def _trigger_safety_stop(reason: str, details: Optional[Dict[str, Any]] = None) 
         send_telegram_message(message)
     except Exception as exc:
         print(f"[WARNING] Telegram notify failed (safety stop continues): {exc}")
+
+
+def _notify_still_paused() -> None:
+    """PAUSED 待機が継続していることを Telegram へ再通知する。"""
+    reason = "unknown"
+    detail_map: Dict[str, Any] = {}
+    triggered_at = ""
+    if MANUAL_STOP_REASON_PATH.exists():
+        try:
+            doc = json.loads(MANUAL_STOP_REASON_PATH.read_text(encoding="utf-8"))
+            if isinstance(doc, dict):
+                reason = str(doc.get("reason", "unknown"))
+                triggered_at = str(doc.get("triggered_at", ""))
+                details = doc.get("details")
+                if isinstance(details, dict):
+                    detail_map = dict(details)
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            pass
+    notified_at = datetime.now().isoformat(timespec="seconds")
+    lines = [
+        "[ALERT] circuit breaker safety stop",
+        "detail=still in emergency stop (PAUSED)",
+        f"reason={reason}",
+        f"triggered_at={triggered_at}",
+        f"notified_at={notified_at}",
+    ]
+    for key in sorted(detail_map.keys()):
+        lines.append(f"{key}={detail_map[key]}")
+    message = "\n".join(lines)
+    print(f"[WARNING] {message}")
+    try:
+        send_telegram_message(message)
+    except Exception as exc:
+        print(f"[WARNING] Telegram notify failed (still paused continues): {exc}")
+
+
+def _build_ws_managers(
+    trader: VirtualTrader,
+    trading_mode: str,
+) -> tuple[WebSocketManager, Optional[PrivateWebSocketManager]]:
+    """起動時 / PAUSED 再開時に使う WebSocket マネージャを生成する。"""
+    ws_manager = WebSocketManager(
+        on_snapshot_callback=trader.on_orderbook_update,
+        on_exchange_status_callback=trader.on_exchange_status,
+    )
+    private_ws_manager: Optional[PrivateWebSocketManager] = None
+    if trading_mode == "real":
+        private_ws_manager = PrivateWebSocketManager(
+            on_execution_callback=trader.on_execution_event,
+            on_order_callback=lambda evt: print(f"[Engine] private order event: {evt}"),
+        )
+    return ws_manager, private_ws_manager
 
 
 def _safety_settings_from_payload(payload: Dict[str, Any]) -> Dict[str, float]:
@@ -970,16 +1024,7 @@ def main() -> None:
     )
     trader.engine_status = "RUNNING"
     trader.config_version = str(payload.get("version", DEFAULT_CONFIG_VERSION))
-    ws_manager = WebSocketManager(
-        on_snapshot_callback=trader.on_orderbook_update,
-        on_exchange_status_callback=trader.on_exchange_status,
-    )
-    private_ws_manager: Optional[PrivateWebSocketManager] = None
-    if trading_mode == "real":
-        private_ws_manager = PrivateWebSocketManager(
-            on_execution_callback=trader.on_execution_event,
-            on_order_callback=lambda evt: print(f"[Engine] private order event: {evt}"),
-        )
+    ws_manager, private_ws_manager = _build_ws_managers(trader, trading_mode)
     snapshot_logger = MarketSnapshotLogger(interval_sec=60)
 
     _write_pid()
@@ -1037,17 +1082,65 @@ def main() -> None:
             except Exception as exc:
                 print(f"[Engine] market snapshot 記録エラー: {exc}")
 
-            if manual_stop_requested:
-                with trader._lock:
-                    position_cleared = trader.position.side is None
-                if position_cleared:
-                    trader.engine_status = "STOPPED"
-                    try:
-                        _write_live_state(trader, ws_manager)
-                    except Exception as exc:
-                        print(f"[Engine] STOPPED状態の保存エラー: {exc}")
-                    print("[Engine] manual stop requested and position is flat. shutting down safely.")
-                    shutdown_event.set()
+            if not manual_stop_requested:
+                continue
+
+            with trader._lock:
+                position_cleared = trader.position.side is None
+            if not position_cleared:
+                continue
+
+            trader.engine_status = "PAUSED"
+            try:
+                _write_live_state(trader, ws_manager)
+            except Exception as exc:
+                print(f"[Engine] PAUSED状態の保存エラー: {exc}")
+            print(
+                "[Engine] manual stop requested and position is flat."
+                " entering PAUSED wait loop (process stays alive)."
+            )
+
+            if private_ws_manager is not None:
+                private_ws_manager.stop()
+            ws_manager.stop()
+
+            last_still_paused_notify_ts = time.time()
+            resumed = False
+            while not shutdown_event.is_set():
+                time.sleep(MANUAL_STOP_PAUSE_POLL_SEC)
+                trader.engine_status = "PAUSED"
+                try:
+                    _write_live_state(trader, ws_manager)
+                except Exception as exc:
+                    print(f"[Engine] PAUSED live_state 更新エラー: {exc}")
+
+                now_pause_ts = time.time()
+                if (
+                    now_pause_ts - last_still_paused_notify_ts
+                    >= MANUAL_STOP_STILL_PAUSED_NOTIFY_SEC
+                ):
+                    _notify_still_paused()
+                    last_still_paused_notify_ts = now_pause_ts
+
+                if not MANUAL_STOP_FLAG_PATH.exists():
+                    resumed = True
+                    break
+
+            if not resumed:
+                break
+
+            print("[Engine] manual_stop.flag cleared; resuming from PAUSED")
+            trader.engine_status = "RUNNING"
+            ws_manager, private_ws_manager = _build_ws_managers(trader, trading_mode)
+            ws_manager.start()
+            if private_ws_manager is not None:
+                private_ws_manager.start()
+            try:
+                _write_live_state(trader, ws_manager)
+            except Exception as exc:
+                print(f"[Engine] resume live_state 更新エラー: {exc}")
+            next_reconciliation_ts = time.time() + reconciliation_interval_sec
+            print("[Engine] resumed to RUNNING")
     finally:
         print("[Engine] シャットダウン処理を開始します。")
         if private_ws_manager is not None:

@@ -191,6 +191,8 @@ def check_services(compose_file: Path) -> int:
             continue
 
         if state == "running":
+            # engine_status=PAUSED もコンテナは running のままのため、
+            # ここを通過し crash-loop とは判定されない。
             _clear_flag_if_present(service)
             continue
 
