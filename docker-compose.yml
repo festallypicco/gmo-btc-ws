@@ -18,6 +18,7 @@ services:
     restart: on-failure:5
     environment:
       - PYTHONUNBUFFERED=1
+      - TZ=Asia/Tokyo
 
   dashboard:
     <<: *app-image
@@ -34,6 +35,8 @@ services:
     depends_on:
       - engine
     restart: on-failure:5
+    environment:
+      - TZ=Asia/Tokyo
 
   ai_review:
     <<: *app-image
@@ -47,3 +50,5 @@ services:
     restart: "no"
     profiles:
       - manual
+    environment:
+      - TZ=Asia/Tokyo

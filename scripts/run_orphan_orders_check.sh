@@ -8,6 +8,7 @@ LOCK_PATH="$SCRIPT_DIR/run_orphan_orders_check.lock"
 LOG_DIR="$PROJECT_ROOT/log"
 LOG_PATH="$LOG_DIR/orphan_orders_check_$(date +%Y-%m-%d).log"
 CHECK_SCRIPT="$SCRIPT_DIR/check_orphan_orders.py"
+PYTHON_BIN="$PROJECT_ROOT/.venv-host/bin/python"
 # 5分間隔の監視向け。csv整合性チェック(30m)に合わせる。
 LOCK_STALE_SEC=1800
 WRAPPER_NAME="run_orphan_orders_check.sh"
@@ -40,7 +41,7 @@ run_and_log() {
     script_path_py="$(to_python_path "$script_path")"
     tmp_out="$(mktemp)"
     tmp_err="$(mktemp)"
-    python "$script_path_py" >"$tmp_out" 2>"$tmp_err"
+    "$PYTHON_BIN" "$script_path_py" >"$tmp_out" 2>"$tmp_err"
     py_exit=$?
     if [ -s "$tmp_out" ]; then
         cat "$tmp_out" >> "$LOG_PATH"
@@ -68,7 +69,7 @@ send_wrapper_telegram_alert() {
     } > "$msg_path"
     msg_path_py="$(to_python_path "$msg_path")"
     script_dir_py="$(to_python_path "$SCRIPT_DIR")"
-    if ! python -c "import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from telegram_notifier import send_telegram_message; send_telegram_message(Path(sys.argv[2]).read_text(encoding='utf-8'))" "$script_dir_py" "$msg_path_py" >"$tg_err" 2>&1; then
+    if ! "$PYTHON_BIN" -c "import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from telegram_notifier import send_telegram_message; send_telegram_message(Path(sys.argv[2]).read_text(encoding='utf-8'))" "$script_dir_py" "$msg_path_py" >"$tg_err" 2>&1; then
         log "WARN" "Telegram notify failed in catch: $(tr '\n' ' ' < "$tg_err")"
     fi
     rm -f "$msg_path" "$tg_err"

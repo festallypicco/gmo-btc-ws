@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 CHECK_SCRIPT="$SCRIPT_DIR/check_engine_crash_loop.py"
+PYTHON_BIN="$PROJECT_ROOT/.venv-host/bin/python"
 LOCK_PATH="$SCRIPT_DIR/run_crash_loop_check.lock"
 # 5分間隔の監視向け。nightly(2h)より短く、csv整合性チェック(30m)に合わせる。
 LOCK_STALE_SEC=1800
@@ -65,7 +66,7 @@ send_wrapper_telegram_alert() {
     } > "$msg_path"
     msg_path_py="$(to_python_path "$msg_path")"
     script_dir_py="$(to_python_path "$SCRIPT_DIR")"
-    if ! python -c "import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from telegram_notifier import send_telegram_message; send_telegram_message(Path(sys.argv[2]).read_text(encoding='utf-8'))" "$script_dir_py" "$msg_path_py" >/dev/null 2>&1; then
+    if ! "$PYTHON_BIN" -c "import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from telegram_notifier import send_telegram_message; send_telegram_message(Path(sys.argv[2]).read_text(encoding='utf-8'))" "$script_dir_py" "$msg_path_py" >/dev/null 2>&1; then
         echo "[WARN] Telegram notify failed in catch"
     fi
     rm -f "$msg_path"
@@ -107,7 +108,7 @@ fi
 
 CHECK_SCRIPT_PY="$(to_python_path "$CHECK_SCRIPT")"
 COMPOSE_FILE_PY="$(to_python_path "$COMPOSE_FILE")"
-python "$CHECK_SCRIPT_PY" --compose-file "$COMPOSE_FILE_PY"
+"$PYTHON_BIN" "$CHECK_SCRIPT_PY" --compose-file "$COMPOSE_FILE_PY"
 exit_code=$?
 
 if [ "$exit_code" -ne 0 ]; then
