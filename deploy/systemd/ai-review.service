@@ -7,4 +7,6 @@ Requires=docker.service
 Type=oneshot
 TimeoutStartSec=0
 WorkingDirectory=/opt/gmo-btc-ws
+User=takuya
+Group=takuya
 ExecStart=/usr/bin/docker compose run --rm --profile manual ai_review bash /app/ai_review/run_nightly_review.sh

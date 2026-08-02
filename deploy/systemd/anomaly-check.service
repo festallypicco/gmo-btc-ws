@@ -4,4 +4,6 @@ Description=BTC trading anomaly check
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/gmo-btc-ws
+User=takuya
+Group=takuya
 ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_anomaly_check.sh

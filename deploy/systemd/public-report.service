@@ -4,4 +4,6 @@ Description=BTC trading public daily report (X post)
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/gmo-btc-ws
+User=takuya
+Group=takuya
 ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_public_report.sh

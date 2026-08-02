@@ -6,4 +6,6 @@ Requires=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/gmo-btc-ws
+User=takuya
+Group=takuya
 ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_crash_loop_check.sh

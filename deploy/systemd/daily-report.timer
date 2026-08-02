@@ -1,0 +1,9 @@
+[Unit]
+Description=Run BTC trading private daily report daily at 05:55
+
+[Timer]
+OnCalendar=*-*-* 05:55:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
