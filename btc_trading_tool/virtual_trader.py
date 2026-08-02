@@ -1753,9 +1753,18 @@ class VirtualTrader:
         """
         起動時の簡易整合性チェック。
         1) 現金 vs 会計上の期待現金
+           - real: daily_start_balance + daily_realized_pnl
+             （日次リセット時の実残高基準。initial_jpy の手動更新を不要にする）
+           - virtual: expected_jpy_balance()
+             （initial_jpy + cumulative_pnl、LONG は想定元本差し引き）
         2) (任意) 復元後総資産 vs 前回 live_state 書き込み時点の総資産
         """
-        expected_jpy = self.expected_jpy_balance()
+        if self.trading_mode == "real":
+            expected_jpy = (
+                float(self.daily_start_balance) + float(self.daily_realized_pnl)
+            )
+        else:
+            expected_jpy = self.expected_jpy_balance()
         jpy_gap = float(self.jpy_balance) - expected_jpy
         mid = float(mid_price) if mid_price is not None and mid_price > 0 else 0.0
         current_total = self.total_assets(mid) if mid > 0 else float(self.jpy_balance)
