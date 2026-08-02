@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
 
+from monitor_heartbeat import record_monitor_heartbeat
 from telegram_notifier import send_telegram_message
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -42,22 +43,7 @@ def _setup_logging() -> None:
 
 
 def _record_monitor_heartbeat() -> None:
-    HEARTBEATS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    data: Dict[str, Any] = {}
-    if HEARTBEATS_PATH.exists():
-        try:
-            loaded = json.loads(HEARTBEATS_PATH.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict):
-                data = loaded
-        except Exception as exc:
-            LOGGER.warning("Failed to read heartbeats file; recreating: %s", exc)
-    data[HEARTBEAT_KEY] = datetime.now().isoformat(timespec="seconds")
-    tmp_path = HEARTBEATS_PATH.with_suffix(HEARTBEATS_PATH.suffix + ".tmp")
-    tmp_path.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    os.replace(tmp_path, HEARTBEATS_PATH)
+    record_monitor_heartbeat(HEARTBEATS_PATH, HEARTBEAT_KEY, logger=LOGGER)
 
 
 def _load_env_file(path: Path) -> Dict[str, str]:
