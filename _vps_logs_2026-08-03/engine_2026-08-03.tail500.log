@@ -1,0 +1,499 @@
+﻿[19:43:43] [OK] [REAL-ORDER] SHORT orderId=8777629131 @ 9,839,199 JPY  size=0.0010 BTC  pending=True
+[19:46:44] [OK] real entry cancel accepted: orderId=8777629131 context=IMBALANCE_REVERSAL
+[+] [19:46:44] SELL(MAKER)  萓｡譬ｼ:     9,839,199 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 71.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:46:44] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,839,199 JPY  imbalance=71.6%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:48:30] SELL(MAKER)  萓｡譬ｼ:     9,837,000 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:48:30] [OK] [REAL-ORDER] SHORT orderId=8777634939 @ 9,837,000 JPY  size=0.0010 BTC  pending=True
+[19:49:40] [OK] real entry cancel accepted: orderId=8777634939 context=IMBALANCE_REVERSAL
+[+] [19:49:40] SELL(MAKER)  萓｡譬ｼ:     9,837,000 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 87.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:49:40] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,837,000 JPY  imbalance=87.2%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.213 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.898 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.405 cooldown_sec=1.5
+[+] [19:49:47] BUY (MAKER)  萓｡譬ｼ:     9,830,033 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 87.2%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:49:47] [OK] [REAL-ORDER] LONG orderId=8777647984 @ 9,830,033 JPY  size=0.0010 BTC  pending=True
+[19:50:00] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777647984 context=IMBALANCE_REVERSAL
+[+] [19:50:00] BUY (MAKER)  萓｡譬ｼ:     9,830,033 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:50:00] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,830,033 JPY  imbalance=0.8%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:50:04] SELL(MAKER)  萓｡譬ｼ:     9,830,799 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.3%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:50:04] [OK] [REAL-ORDER] SHORT orderId=8777648069 @ 9,830,799 JPY  size=0.0010 BTC  pending=True
+[19:50:33] [OK] real entry cancel accepted: orderId=8777648069 context=IMBALANCE_REVERSAL
+[+] [19:50:33] SELL(MAKER)  萓｡譬ｼ:     9,830,799 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 89.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:50:33] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,830,799 JPY  imbalance=89.0%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.451 cooldown_sec=1.5
+[+] [19:50:38] BUY (MAKER)  萓｡譬ｼ:     9,826,573 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 83.6%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:50:38] [OK] [REAL-ORDER] LONG orderId=8777648230 @ 9,826,573 JPY  size=0.0010 BTC  pending=True
+[19:50:41] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777648230 context=IMBALANCE_REVERSAL
+[+] [19:50:41] BUY (MAKER)  萓｡譬ｼ:     9,826,573 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 2.3%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:50:41] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,826,573 JPY  imbalance=2.3%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.002 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.339 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.844 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.351 cooldown_sec=1.5
+[+] [19:50:43] SELL(MAKER)  萓｡譬ｼ:     9,826,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 16.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:50:43] [OK] [REAL-ORDER] SHORT orderId=8777648254 @ 9,826,879 JPY  size=0.0010 BTC  pending=True
+[19:51:28] [OK] real entry cancel accepted: orderId=8777648254 context=IMBALANCE_REVERSAL
+[+] [19:51:28] SELL(MAKER)  萓｡譬ｼ:     9,826,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 50.4%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:51:28] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,826,879 JPY  imbalance=50.4%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.393 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.899 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,829,119 elapsed=1.911 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,828,559 elapsed=2.418 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,828,559 elapsed=2.921 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,828,559 elapsed=3.428 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,828,559 elapsed=3.931 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,828,559 elapsed=4.097 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,828,559 elapsed=4.444 cooldown_sec=5
+[+] [19:51:34] SELL(MAKER)  萓｡譬ｼ:     9,828,559 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 16.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:51:34] [OK] [REAL-ORDER] SHORT orderId=8777648449 @ 9,828,559 JPY  size=0.0010 BTC  pending=True
+[19:54:27] [OK] real entry cancel accepted: orderId=8777648449 context=IMBALANCE_REVERSAL
+[+] [19:54:27] SELL(MAKER)  萓｡譬ｼ:     9,828,559 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 96.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:54:27] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,828,559 JPY  imbalance=96.6%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.398 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.904 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.409 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=1.917 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=2.425 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=2.932 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=3.174 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=3.945 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=4.476 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=4.982 cooldown_sec=5
+[+] [19:54:33] SELL(MAKER)  萓｡譬ｼ:     9,823,519 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 12.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:54:33] [OK] [REAL-ORDER] SHORT orderId=8777656778 @ 9,823,519 JPY  size=0.0010 BTC  pending=True
+[19:55:27] [OK] real entry cancel accepted: orderId=8777656778 context=IMBALANCE_REVERSAL
+[+] [19:55:27] SELL(MAKER)  萓｡譬ｼ:     9,823,519 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 48.7%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:55:27] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,823,519 JPY  imbalance=48.7%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.377 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.883 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.388 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,827,439 elapsed=2.396 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,827,439 elapsed=2.901 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,827,439 elapsed=3.406 cooldown_sec=5
+[+] [19:55:36] SELL(MAKER)  萓｡譬ｼ:     9,827,439 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:55:36] [OK] [REAL-ORDER] SHORT orderId=8777657046 @ 9,827,439 JPY  size=0.0010 BTC  pending=True
+[19:56:39] [OK] real entry cancel accepted: orderId=8777657046 context=IMBALANCE_REVERSAL
+[+] [19:56:39] SELL(MAKER)  萓｡譬ｼ:     9,827,439 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 2.5%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:56:39] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,827,439 JPY  imbalance=2.5%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by cooldown: side=SELL price=9,830,239 elapsed=3.965 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,830,239 elapsed=4.484 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,830,239 elapsed=4.993 cooldown_sec=5
+[+] [19:56:45] SELL(MAKER)  萓｡譬ｼ:     9,830,239 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.3%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:56:45] [OK] [REAL-ORDER] SHORT orderId=8777657317 @ 9,830,239 JPY  size=0.0010 BTC  pending=True
+[19:56:47] [OK] real entry cancel accepted: orderId=8777657317 context=IMBALANCE_REVERSAL
+[+] [19:56:47] SELL(MAKER)  萓｡譬ｼ:     9,830,239 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 2.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:56:47] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,830,239 JPY  imbalance=2.0%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:57:03] SELL(MAKER)  萓｡譬ｼ:     9,827,999 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 5.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:57:03] [OK] [REAL-ORDER] SHORT orderId=8777657391 @ 9,827,999 JPY  size=0.0010 BTC  pending=True
+[19:57:21] [OK] real entry cancel accepted: orderId=8777657391 context=IMBALANCE_REVERSAL
+[+] [19:57:21] SELL(MAKER)  萓｡譬ｼ:     9,827,999 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.4%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:57:21] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,827,999 JPY  imbalance=0.4%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:57:32] BUY (MAKER)  萓｡譬ｼ:     9,831,043 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:57:32] [OK] [REAL-ORDER] LONG orderId=8777668065 @ 9,831,043 JPY  size=0.0010 BTC  pending=True
+[19:57:40] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777668065 context=IMBALANCE_REVERSAL
+[+] [19:57:40] BUY (MAKER)  萓｡譬ｼ:     9,831,043 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 8.5%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:57:40] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,831,043 JPY  imbalance=8.5%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.373 cooldown_sec=1.5
+[+] [19:58:19] SELL(MAKER)  萓｡譬ｼ:     9,836,399 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 15.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:58:19] [OK] [REAL-ORDER] SHORT orderId=8777668254 @ 9,836,399 JPY  size=0.0010 BTC  pending=True
+[19:59:27] [OK] real entry cancel accepted: orderId=8777668254 context=IMBALANCE_REVERSAL
+[+] [19:59:27] SELL(MAKER)  萓｡譬ｼ:     9,836,399 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 2.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:59:27] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,836,399 JPY  imbalance=2.0%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:59:52] SELL(MAKER)  萓｡譬ｼ:     9,828,554 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 19.2%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:59:52] [OK] [REAL-ORDER] SHORT orderId=8777668659 @ 9,828,554 JPY  size=0.0010 BTC  pending=True
+[19:59:55] [OK] real entry cancel accepted: orderId=8777668659 context=IMBALANCE_REVERSAL
+[+] [19:59:55] SELL(MAKER)  萓｡譬ｼ:     9,828,554 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 78.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:59:55] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,828,554 JPY  imbalance=78.6%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.401 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.815 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.418 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,829,119 elapsed=1.921 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,829,119 elapsed=2.438 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,829,119 elapsed=2.943 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,829,679 elapsed=3.954 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,829,679 elapsed=4.460 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,830,239 elapsed=4.966 cooldown_sec=5
+[+] [20:00:00] SELL(MAKER)  萓｡譬ｼ:     9,830,239 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:00:00] [OK] [REAL-ORDER] SHORT orderId=8777668695 @ 9,830,239 JPY  size=0.0010 BTC  pending=True
+[20:00:01] [OK] real entry cancel accepted: orderId=8777668695 context=IMBALANCE_REVERSAL
+[+] [20:00:01] SELL(MAKER)  萓｡譬ｼ:     9,830,239 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 4.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:00:01] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,830,239 JPY  imbalance=4.1%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by cooldown: side=SELL price=9,831,919 elapsed=3.078 cooldown_sec=5
+[+] [20:00:08] SELL(MAKER)  萓｡譬ｼ:     9,831,919 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.7%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:00:08] [OK] [REAL-ORDER] SHORT orderId=8777668734 @ 9,831,919 JPY  size=0.0010 BTC  pending=True
+[20:01:16] [OK] real entry cancel accepted: orderId=8777668734 context=IMBALANCE_REVERSAL
+[+] [20:01:16] SELL(MAKER)  萓｡譬ｼ:     9,831,919 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:01:16] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,831,919 JPY  imbalance=1.2%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:01:28] SELL(MAKER)  萓｡譬ｼ:     9,828,506 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:01:28] [OK] [REAL-ORDER] SHORT orderId=8777681589 @ 9,828,506 JPY  size=0.0010 BTC  pending=True
+[20:02:06] [OK] real entry cancel accepted: orderId=8777681589 context=IMBALANCE_REVERSAL
+[+] [20:02:07] SELL(MAKER)  萓｡譬ｼ:     9,828,506 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:02:07] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,828,506 JPY  imbalance=0.1%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:02:36] SELL(MAKER)  萓｡譬ｼ:     9,822,323 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:02:36] [OK] [REAL-ORDER] SHORT orderId=8777681877 @ 9,822,323 JPY  size=0.0010 BTC  pending=True
+[20:02:57] [OK] real entry cancel accepted: orderId=8777681877 context=IMBALANCE_REVERSAL
+[+] [20:02:57] SELL(MAKER)  萓｡譬ｼ:     9,822,323 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 80.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:02:57] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,822,323 JPY  imbalance=80.8%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.911 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.416 cooldown_sec=1.5
+[+] [20:02:59] BUY (MAKER)  萓｡譬ｼ:     9,820,003 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 80.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:02:59] [OK] [REAL-ORDER] LONG orderId=8777681977 @ 9,820,003 JPY  size=0.0010 BTC  pending=True
+[20:03:10] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777681977 context=IMBALANCE_REVERSAL
+[+] [20:03:11] BUY (MAKER)  萓｡譬ｼ:     9,820,003 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.5%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:03:11] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,820,003 JPY  imbalance=1.5%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.325 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.834 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.341 cooldown_sec=1.5
+[+] [20:03:13] SELL(MAKER)  萓｡譬ｼ:     9,822,399 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:03:13] [OK] [REAL-ORDER] SHORT orderId=8777682047 @ 9,822,399 JPY  size=0.0010 BTC  pending=True
+[20:03:47] [OK] real entry cancel accepted: orderId=8777682047 context=IMBALANCE_REVERSAL
+[+] [20:03:47] SELL(MAKER)  萓｡譬ｼ:     9,822,399 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 84.9%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:03:47] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,822,399 JPY  imbalance=84.9%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.416 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.923 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.429 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,110 elapsed=1.935 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,110 elapsed=2.697 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,110 elapsed=3.451 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,110 elapsed=3.963 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,110 elapsed=4.469 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,110 elapsed=4.974 cooldown_sec=5
+[+] [20:03:53] SELL(MAKER)  萓｡譬ｼ:     9,821,110 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 9.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:03:53] [OK] [REAL-ORDER] SHORT orderId=8777682218 @ 9,821,110 JPY  size=0.0010 BTC  pending=True
+[20:04:05] [OK] real entry cancel accepted: orderId=8777682218 context=IMBALANCE_REVERSAL
+[+] [20:04:05] SELL(MAKER)  萓｡譬ｼ:     9,821,110 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 85.9%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:04:05] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,821,110 JPY  imbalance=85.9%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.404 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.912 cooldown_sec=1.5
+[+] [20:04:07] BUY (MAKER)  萓｡譬ｼ:     9,818,005 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 62.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:04:07] [OK] [REAL-ORDER] LONG orderId=8777682283 @ 9,818,005 JPY  size=0.0010 BTC  pending=True
+[20:04:11] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777682283 context=IMBALANCE_REVERSAL
+[+] [20:04:11] BUY (MAKER)  萓｡譬ｼ:     9,818,005 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 6.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:04:11] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,818,005 JPY  imbalance=6.6%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:04:22] SELL(MAKER)  萓｡譬ｼ:     9,820,159 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:04:22] [OK] [REAL-ORDER] SHORT orderId=8777682338 @ 9,820,159 JPY  size=0.0010 BTC  pending=True
+[20:04:25] [OK] real entry cancel accepted: orderId=8777682338 context=IMBALANCE_REVERSAL
+[+] [20:04:25] SELL(MAKER)  萓｡譬ｼ:     9,820,159 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 63.3%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:04:25] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,820,159 JPY  imbalance=63.3%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.406 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.946 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.450 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=1.957 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=2.463 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=2.974 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=3.480 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=3.987 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=4.494 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,279 elapsed=4.997 cooldown_sec=5
+[+] [20:04:31] SELL(MAKER)  萓｡譬ｼ:     9,821,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 6.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:04:31] [OK] [REAL-ORDER] SHORT orderId=8777682385 @ 9,821,279 JPY  size=0.0010 BTC  pending=True
+[20:05:01] [OK] real entry cancel accepted: orderId=8777682385 context=IMBALANCE_REVERSAL
+[+] [20:05:01] SELL(MAKER)  萓｡譬ｼ:     9,821,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 4.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:05:01] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,821,279 JPY  imbalance=4.0%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:05:15] SELL(MAKER)  萓｡譬ｼ:     9,823,519 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 23.6%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:05:15] [OK] [REAL-ORDER] SHORT orderId=8777691898 @ 9,823,519 JPY  size=0.0010 BTC  pending=True
+[20:05:33] [OK] real entry cancel accepted: orderId=8777691898 context=IMBALANCE_REVERSAL
+[+] [20:05:33] SELL(MAKER)  萓｡譬ｼ:     9,823,519 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 15.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:05:33] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,823,519 JPY  imbalance=15.2%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:06:11] SELL(MAKER)  萓｡譬ｼ:     9,821,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 35.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:06:11] [OK] [REAL-ORDER] SHORT orderId=8777692114 @ 9,821,279 JPY  size=0.0010 BTC  pending=True
+[20:08:11] [OK] real entry cancel accepted: orderId=8777692114 context=IMBALANCE_REVERSAL
+[+] [20:08:11] SELL(MAKER)  萓｡譬ｼ:     9,821,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 83.3%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:08:11] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,821,279 JPY  imbalance=83.3%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.399 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.903 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.409 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=1.914 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=2.419 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=2.925 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=3.264 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=3.430 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=3.934 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,815,427 elapsed=4.441 cooldown_sec=5
+[+] [20:08:17] SELL(MAKER)  萓｡譬ｼ:     9,815,427 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 8.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:08:17] [OK] [REAL-ORDER] SHORT orderId=8777692628 @ 9,815,427 JPY  size=0.0010 BTC  pending=True
+[20:08:27] [OK] real entry cancel accepted: orderId=8777692628 context=IMBALANCE_REVERSAL
+[+] [20:08:28] SELL(MAKER)  萓｡譬ｼ:     9,815,427 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 90.4%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:08:28] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,815,427 JPY  imbalance=90.4%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.424 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.932 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.436 cooldown_sec=1.5
+[+] [20:08:30] BUY (MAKER)  萓｡譬ｼ:     9,815,001 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 73.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:08:30] [OK] [REAL-ORDER] LONG orderId=8777692677 @ 9,815,001 JPY  size=0.0010 BTC  pending=True
+[20:08:37] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777692677 context=IMBALANCE_REVERSAL
+[+] [20:08:37] BUY (MAKER)  萓｡譬ｼ:     9,815,001 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 41.7%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:08:37] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,815,001 JPY  imbalance=41.7%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.352 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.860 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.365 cooldown_sec=1.5
+[+] [20:08:39] SELL(MAKER)  萓｡譬ｼ:     9,815,000 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 41.7%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:08:39] [OK] [REAL-ORDER] SHORT orderId=8777692726 @ 9,815,000 JPY  size=0.0010 BTC  pending=True
+[20:10:02] [OK] real entry cancel accepted: orderId=8777692726 context=IMBALANCE_REVERSAL
+[+] [20:10:02] SELL(MAKER)  萓｡譬ｼ:     9,815,000 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 68.7%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:10:02] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,815,000 JPY  imbalance=68.7%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:10:10] SELL(MAKER)  萓｡譬ｼ:     9,810,639 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.4%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:10:10] [OK] [REAL-ORDER] SHORT orderId=8777699757 @ 9,810,639 JPY  size=0.0010 BTC  pending=True
+[20:11:05] [OK] real entry cancel accepted: orderId=8777699757 context=IMBALANCE_REVERSAL
+[+] [20:11:05] SELL(MAKER)  萓｡譬ｼ:     9,810,639 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 87.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:11:05] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,810,639 JPY  imbalance=87.1%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.395 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.899 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.405 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,399 elapsed=1.912 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,399 elapsed=2.416 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,959 elapsed=2.923 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,959 elapsed=3.000 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,959 elapsed=3.429 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,959 elapsed=3.935 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,959 elapsed=4.439 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,808,959 elapsed=4.947 cooldown_sec=5
+[+] [20:11:10] SELL(MAKER)  萓｡譬ｼ:     9,808,959 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:11:10] [OK] [REAL-ORDER] SHORT orderId=8777699993 @ 9,808,959 JPY  size=0.0010 BTC  pending=True
+[20:12:01] [OK] real entry cancel accepted: orderId=8777699993 context=IMBALANCE_REVERSAL
+[+] [20:12:01] SELL(MAKER)  萓｡譬ｼ:     9,808,959 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:12:01] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,808,959 JPY  imbalance=1.8%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:13:27] SELL(MAKER)  萓｡譬ｼ:     9,812,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:13:27] [OK] [REAL-ORDER] SHORT orderId=8777700480 @ 9,812,879 JPY  size=0.0010 BTC  pending=True
+[20:14:48] [OK] real entry cancel accepted: orderId=8777700480 context=IMBALANCE_REVERSAL
+[+] [20:14:48] SELL(MAKER)  萓｡譬ｼ:     9,812,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 88.9%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:14:48] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,812,879 JPY  imbalance=88.9%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.393 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.913 cooldown_sec=1.5
+[+] [20:14:51] BUY (MAKER)  萓｡譬ｼ:     9,814,539 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:14:51] [OK] [REAL-ORDER] LONG orderId=8777712486 @ 9,814,539 JPY  size=0.0010 BTC  pending=True
+[20:14:54] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777712486 context=IMBALANCE_REVERSAL
+[+] [20:14:55] BUY (MAKER)  萓｡譬ｼ:     9,814,539 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 13.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:14:55] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,814,539 JPY  imbalance=13.6%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.353 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.869 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.389 cooldown_sec=1.5
+[+] [20:14:57] SELL(MAKER)  萓｡譬ｼ:     9,816,123 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 8.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:14:57] [OK] [REAL-ORDER] SHORT orderId=8777712508 @ 9,816,123 JPY  size=0.0010 BTC  pending=True
+[20:15:17] [OK] real entry cancel accepted: orderId=8777712508 context=IMBALANCE_REVERSAL
+[+] [20:15:18] SELL(MAKER)  萓｡譬ｼ:     9,816,123 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 96.3%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:15:18] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,816,123 JPY  imbalance=96.3%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:15:24] SELL(MAKER)  萓｡譬ｼ:     9,813,131 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 43.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:15:24] [OK] [REAL-ORDER] SHORT orderId=8777712622 @ 9,813,131 JPY  size=0.0010 BTC  pending=True
+[20:15:28] [OK] real entry cancel accepted: orderId=8777712622 context=IMBALANCE_REVERSAL
+[+] [20:15:28] SELL(MAKER)  萓｡譬ｼ:     9,813,131 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.7%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:15:28] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,813,131 JPY  imbalance=99.7%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.400 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.408 cooldown_sec=1.5
+[+] [20:15:30] BUY (MAKER)  萓｡譬ｼ:     9,812,751 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:15:30] [OK] [REAL-ORDER] LONG orderId=8777712653 @ 9,812,751 JPY  size=0.0010 BTC  pending=True
+[20:15:36] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777712653 context=IMBALANCE_REVERSAL
+[+] [20:15:36] BUY (MAKER)  萓｡譬ｼ:     9,812,751 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 4.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:15:36] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,812,751 JPY  imbalance=4.0%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.373 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.880 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.205 cooldown_sec=1.5
+[+] [20:15:38] SELL(MAKER)  萓｡譬ｼ:     9,815,119 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:15:38] [OK] [REAL-ORDER] SHORT orderId=8777712697 @ 9,815,119 JPY  size=0.0010 BTC  pending=True
+[20:16:32] [OK] real entry cancel accepted: orderId=8777712697 context=IMBALANCE_REVERSAL
+[+] [20:16:32] SELL(MAKER)  萓｡譬ｼ:     9,815,119 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 91.9%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:16:32] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,815,119 JPY  imbalance=91.9%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:16:35] BUY (MAKER)  萓｡譬ｼ:     9,815,566 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:16:35] [OK] [REAL-ORDER] LONG orderId=8777712911 @ 9,815,566 JPY  size=0.0010 BTC  pending=True
+[20:16:57] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777712911 context=IMBALANCE_REVERSAL
+[+] [20:16:57] BUY (MAKER)  萓｡譬ｼ:     9,815,566 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 16.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:16:57] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,815,566 JPY  imbalance=16.0%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.370 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.876 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.381 cooldown_sec=1.5
+[+] [20:16:59] SELL(MAKER)  萓｡譬ｼ:     9,817,919 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:16:59] [OK] [REAL-ORDER] SHORT orderId=8777713002 @ 9,817,919 JPY  size=0.0010 BTC  pending=True
+[20:17:15] [OK] real entry cancel accepted: orderId=8777713002 context=IMBALANCE_REVERSAL
+[+] [20:17:16] SELL(MAKER)  萓｡譬ｼ:     9,817,919 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 76.4%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:17:16] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,817,919 JPY  imbalance=76.4%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.896 cooldown_sec=1.5
+[+] [20:17:18] BUY (MAKER)  萓｡譬ｼ:     9,815,636 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.6%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:17:18] [OK] [REAL-ORDER] LONG orderId=8777713072 @ 9,815,636 JPY  size=0.0010 BTC  pending=True
+[PrivateWebSocketManager] ws-auth token 繧貞ｻｶ髟ｷ縺励∪縺励◆縲・[20:17:20] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777713072 context=IMBALANCE_REVERSAL
+[+] [20:17:20] BUY (MAKER)  萓｡譬ｼ:     9,815,636 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:17:20] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,815,636 JPY  imbalance=0.8%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.351 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.368 cooldown_sec=1.5
+[+] [20:17:22] SELL(MAKER)  萓｡譬ｼ:     9,817,919 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.6%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:17:22] [OK] [REAL-ORDER] SHORT orderId=8777713093 @ 9,817,919 JPY  size=0.0010 BTC  pending=True
+[20:18:05] [OK] real entry cancel accepted: orderId=8777713093 context=IMBALANCE_REVERSAL
+[+] [20:18:05] SELL(MAKER)  萓｡譬ｼ:     9,817,919 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:18:05] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,817,919 JPY  imbalance=0.2%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:18:14] SELL(MAKER)  萓｡譬ｼ:     9,821,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:18:14] [OK] [REAL-ORDER] SHORT orderId=8777719799 @ 9,821,279 JPY  size=0.0010 BTC  pending=True
+[20:18:48] [OK] real entry cancel accepted: orderId=8777719799 context=IMBALANCE_REVERSAL
+[+] [20:18:48] SELL(MAKER)  萓｡譬ｼ:     9,821,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 5.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:18:48] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,821,279 JPY  imbalance=5.8%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.405 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.913 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.420 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,839 elapsed=1.923 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,821,839 elapsed=2.390 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,822,399 elapsed=2.933 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,822,959 elapsed=3.439 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,519 elapsed=3.944 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,823,518 elapsed=4.955 cooldown_sec=5
+[+] [20:18:54] BUY (MAKER)  萓｡譬ｼ:     9,821,842 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 58.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:18:54] [OK] [REAL-ORDER] LONG orderId=8777719953 @ 9,821,842 JPY  size=0.0010 BTC  pending=True
+[20:19:00] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777719953 context=IMBALANCE_REVERSAL
+[+] [20:19:01] BUY (MAKER)  萓｡譬ｼ:     9,821,842 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 26.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:19:01] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,821,842 JPY  imbalance=26.8%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.358 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.417 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.865 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.370 cooldown_sec=1.5
+[+] [20:19:03] SELL(MAKER)  萓｡譬ｼ:     9,826,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:19:03] [OK] [REAL-ORDER] SHORT orderId=8777720008 @ 9,826,879 JPY  size=0.0010 BTC  pending=True
+[20:19:05] [OK] real entry cancel accepted: orderId=8777720008 context=IMBALANCE_REVERSAL
+[+] [20:19:05] SELL(MAKER)  萓｡譬ｼ:     9,826,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 2.5%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:19:05] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,826,879 JPY  imbalance=2.5%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by cooldown: side=SELL price=9,827,999 elapsed=4.958 cooldown_sec=5
+[+] [20:19:10] SELL(MAKER)  萓｡譬ｼ:     9,827,999 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:19:10] [OK] [REAL-ORDER] SHORT orderId=8777720034 @ 9,827,999 JPY  size=0.0010 BTC  pending=True
+[20:19:33] [OK] real entry cancel accepted: orderId=8777720034 context=IMBALANCE_REVERSAL
+[+] [20:19:33] SELL(MAKER)  萓｡譬ｼ:     9,827,999 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 4.3%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:19:33] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,827,999 JPY  imbalance=4.3%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:19:56] BUY (MAKER)  萓｡譬ｼ:     9,829,011 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:19:56] [OK] [REAL-ORDER] LONG orderId=8777720210 @ 9,829,011 JPY  size=0.0010 BTC  pending=True
+[20:20:02] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777720210 context=IMBALANCE_REVERSAL
+[+] [20:20:02] BUY (MAKER)  萓｡譬ｼ:     9,829,011 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 2.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:20:02] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,829,011 JPY  imbalance=2.1%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.236 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.798 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.303 cooldown_sec=1.5
+[+] [20:20:04] SELL(MAKER)  萓｡譬ｼ:     9,831,186 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 6.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:20:04] [OK] [REAL-ORDER] SHORT orderId=8777720237 @ 9,831,186 JPY  size=0.0010 BTC  pending=True
+[20:21:16] [OK] real entry cancel accepted: orderId=8777720237 context=IMBALANCE_REVERSAL
+[+] [20:21:16] SELL(MAKER)  萓｡譬ｼ:     9,831,186 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 96.7%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:21:16] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,831,186 JPY  imbalance=96.7%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.891 cooldown_sec=1.5
+[+] [20:21:18] BUY (MAKER)  萓｡譬ｼ:     9,831,651 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:21:18] [OK] [REAL-ORDER] LONG orderId=8777720531 @ 9,831,651 JPY  size=0.0010 BTC  pending=True
+[20:21:29] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777720531 context=IMBALANCE_REVERSAL
+[+] [20:21:30] BUY (MAKER)  萓｡譬ｼ:     9,831,651 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 7.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:21:30] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,831,651 JPY  imbalance=7.8%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:21:42] BUY (MAKER)  萓｡譬ｼ:     9,831,679 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:21:42] [OK] [REAL-ORDER] LONG orderId=8777720626 @ 9,831,679 JPY  size=0.0010 BTC  pending=True
+[20:21:42] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777720626 context=IMBALANCE_REVERSAL
+[+] [20:21:42] BUY (MAKER)  萓｡譬ｼ:     9,831,679 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:21:42] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,831,679 JPY  imbalance=0.8%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by cooldown: side=BUY price=9,831,684 elapsed=3.384 cooldown_sec=5
+[+] [20:21:56] SELL(MAKER)  萓｡譬ｼ:     9,835,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:21:56] [OK] [REAL-ORDER] SHORT orderId=8777720669 @ 9,835,279 JPY  size=0.0010 BTC  pending=True
+[20:22:47] [OK] real entry cancel accepted: orderId=8777720669 context=IMBALANCE_REVERSAL
+[+] [20:22:48] SELL(MAKER)  萓｡譬ｼ:     9,835,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:22:48] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,835,279 JPY  imbalance=99.2%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=1.884 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=2.389 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=2.606 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=2.894 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=3.400 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=3.906 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=4.412 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,839,759 elapsed=4.915 cooldown_sec=5
+[+] [20:22:53] SELL(MAKER)  萓｡譬ｼ:     9,839,759 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.4%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:22:53] [OK] [REAL-ORDER] SHORT orderId=8777731614 @ 9,839,759 JPY  size=0.0010 BTC  pending=True
+[20:22:58] [OK] real entry cancel accepted: orderId=8777731614 context=IMBALANCE_REVERSAL
+[+] [20:22:58] SELL(MAKER)  萓｡譬ｼ:     9,839,759 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:22:58] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,839,759 JPY  imbalance=98.1%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.885 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.398 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,840,319 elapsed=3.422 cooldown_sec=5
+[+] [20:23:03] SELL(MAKER)  萓｡譬ｼ:     9,839,995 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 12.4%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:23:03] [OK] [REAL-ORDER] SHORT orderId=8777731657 @ 9,839,995 JPY  size=0.0010 BTC  pending=True
+[20:23:05] [OK] real entry cancel accepted: orderId=8777731657 context=IMBALANCE_REVERSAL
+[+] [20:23:05] SELL(MAKER)  萓｡譬ｼ:     9,839,995 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 87.8%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:23:05] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,839,995 JPY  imbalance=87.8%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:23:11] BUY (MAKER)  萓｡譬ｼ:     9,837,836 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.5%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:23:11] [OK] [REAL-ORDER] LONG orderId=8777731687 @ 9,837,836 JPY  size=0.0010 BTC  pending=True
+[20:23:38] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777731687 context=IMBALANCE_REVERSAL
+[+] [20:23:38] BUY (MAKER)  萓｡譬ｼ:     9,837,836 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 7.3%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:23:38] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,837,836 JPY  imbalance=7.3%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.356 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.364 cooldown_sec=1.5
+[+] [20:23:41] SELL(MAKER)  萓｡譬ｼ:     9,839,970 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:23:41] [OK] [REAL-ORDER] SHORT orderId=8777731775 @ 9,839,970 JPY  size=0.0010 BTC  pending=True
+[20:31:22] [OK] real entry cancel accepted: orderId=8777731775 context=IMBALANCE_REVERSAL
+[+] [20:31:22] SELL(MAKER)  萓｡譬ｼ:     9,839,970 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:31:22] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,839,970 JPY  imbalance=99.6%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by cooldown: side=SELL price=9,840,319 elapsed=3.963 cooldown_sec=5
+[+] [20:31:28] BUY (MAKER)  萓｡譬ｼ:     9,839,754 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:31:28] [OK] [REAL-ORDER] LONG orderId=8777742285 @ 9,839,754 JPY  size=0.0010 BTC  pending=True
+[20:33:42] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777742285 context=IMBALANCE_REVERSAL
+[+] [20:33:42] BUY (MAKER)  萓｡譬ｼ:     9,839,754 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:33:42] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,839,754 JPY  imbalance=1.1%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.004 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.830 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.335 cooldown_sec=1.5
+[+] [20:33:44] SELL(MAKER)  萓｡譬ｼ:     9,840,319 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:33:44] [OK] [REAL-ORDER] SHORT orderId=8777751429 @ 9,840,319 JPY  size=0.0010 BTC  pending=True
+[20:34:13] [OK] real entry cancel accepted: orderId=8777751429 context=IMBALANCE_REVERSAL
+[+] [20:34:13] SELL(MAKER)  萓｡譬ｼ:     9,840,319 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 59.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:34:13] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,840,319 JPY  imbalance=59.2%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.725 cooldown_sec=1.5
+[+] [20:34:15] BUY (MAKER)  萓｡譬ｼ:     9,840,321 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 59.2%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:34:15] [OK] [REAL-ORDER] LONG orderId=8777751546 @ 9,840,321 JPY  size=0.0010 BTC  pending=True
+[20:34:19] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777751546 context=IMBALANCE_REVERSAL
+[+] [20:34:20] BUY (MAKER)  萓｡譬ｼ:     9,840,321 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 9.2%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:34:20] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,840,321 JPY  imbalance=9.2%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.330 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.351 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=BUY price=9,840,323 elapsed=1.876 cooldown_sec=5
+[+] [20:34:23] SELL(MAKER)  萓｡譬ｼ:     9,840,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 5.2%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:34:23] [OK] [REAL-ORDER] SHORT orderId=8777751583 @ 9,840,879 JPY  size=0.0010 BTC  pending=True
+[20:36:23] [OK] real entry cancel accepted: orderId=8777751583 context=IMBALANCE_REVERSAL
+[+] [20:36:23] SELL(MAKER)  萓｡譬ｼ:     9,840,879 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:36:23] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,840,879 JPY  imbalance=99.0%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.407 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.912 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.421 cooldown_sec=1.5
+[+] [20:36:30] BUY (MAKER)  萓｡譬ｼ:     9,843,690 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:36:30] [OK] [REAL-ORDER] LONG orderId=8777762702 @ 9,843,690 JPY  size=0.0010 BTC  pending=True
+[20:36:32] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777762702 context=IMBALANCE_REVERSAL
+[+] [20:36:32] BUY (MAKER)  萓｡譬ｼ:     9,843,690 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 16.7%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:36:32] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,843,690 JPY  imbalance=16.7%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:36:40] BUY (MAKER)  萓｡譬ｼ:     9,843,685 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 99.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:36:40] [OK] [REAL-ORDER] LONG orderId=8777762737 @ 9,843,685 JPY  size=0.0010 BTC  pending=True
+[20:38:29] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777762737 context=IMBALANCE_REVERSAL
+[+] [20:38:29] BUY (MAKER)  萓｡譬ｼ:     9,843,685 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 5.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:38:29] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,843,685 JPY  imbalance=5.6%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.343 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.849 cooldown_sec=1.5
+[+] [20:38:32] SELL(MAKER)  萓｡譬ｼ:     9,845,149 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 5.7%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:38:32] [OK] [REAL-ORDER] SHORT orderId=8777763137 @ 9,845,149 JPY  size=0.0010 BTC  pending=True
+[20:40:57] [OK] real entry cancel accepted: orderId=8777763137 context=IMBALANCE_REVERSAL
+[+] [20:40:57] SELL(MAKER)  萓｡譬ｼ:     9,845,149 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 4.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:40:57] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,845,149 JPY  imbalance=4.0%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.436 cooldown_sec=1.5
+[SKIP] entry blocked by cooldown: side=SELL price=9,835,473 elapsed=1.945 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,835,473 elapsed=2.457 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,835,473 elapsed=4.499 cooldown_sec=5
+[+] [20:41:02] SELL(MAKER)  萓｡譬ｼ:     9,835,473 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:41:02] [OK] [REAL-ORDER] SHORT orderId=8777771377 @ 9,835,473 JPY  size=0.0010 BTC  pending=True
+[20:44:17] [OK] real entry cancel accepted: orderId=8777771377 context=IMBALANCE_REVERSAL
+[+] [20:44:17] SELL(MAKER)  萓｡譬ｼ:     9,835,473 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 96.5%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:44:17] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,835,473 JPY  imbalance=96.5%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:44:23] BUY (MAKER)  萓｡譬ｼ:     9,834,882 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:44:23] [OK] [REAL-ORDER] LONG orderId=8777772144 @ 9,834,882 JPY  size=0.0010 BTC  pending=True
+[20:44:27] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777772144 context=IMBALANCE_REVERSAL
+[+] [20:44:27] BUY (MAKER)  萓｡譬ｼ:     9,834,882 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 31.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:44:27] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,834,882 JPY  imbalance=31.6%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.357 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.866 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.371 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.381 cooldown_sec=1.5
+[+] [20:44:29] SELL(MAKER)  萓｡譬ｼ:     9,835,473 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:44:29] [OK] [REAL-ORDER] SHORT orderId=8777772173 @ 9,835,473 JPY  size=0.0010 BTC  pending=True
+[20:44:53] [OK] real entry cancel accepted: orderId=8777772173 context=IMBALANCE_REVERSAL
+[+] [20:44:53] SELL(MAKER)  萓｡譬ｼ:     9,835,473 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.1%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:44:53] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,835,473 JPY  imbalance=98.1%  cancel_reason=IMBALANCE_REVERSAL
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.417 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=0.915 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.057 cooldown_sec=1.5
+[SKIP] entry blocked by imbalance any-side cooldown: elapsed=1.422 cooldown_sec=1.5
+[+] [20:44:55] BUY (MAKER)  萓｡譬ｼ:     9,834,883 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 98.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:44:55] [OK] [REAL-ORDER] LONG orderId=8777772269 @ 9,834,883 JPY  size=0.0010 BTC  pending=True
+[20:45:05] [OK] real entry cancel benign and no open position; treat as cancelled orderId=8777772269 context=IMBALANCE_REVERSAL
+[+] [20:45:05] BUY (MAKER)  萓｡譬ｼ:     9,834,883 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:45:05] [WARN] [ORDER-CANCEL]  side=LONG  limit=9,834,883 JPY  imbalance=1.0%  cancel_reason=IMBALANCE_REVERSAL
+[+] [20:46:12] SELL(MAKER)  萓｡譬ｼ:     9,835,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 0.0%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[20:46:12] [OK] [REAL-ORDER] SHORT orderId=8777780197 @ 9,835,279 JPY  size=0.0010 BTC  pending=True

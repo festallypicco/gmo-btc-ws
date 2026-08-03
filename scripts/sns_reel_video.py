@@ -7,6 +7,7 @@ Instagramリール向け縦型短尺動画の生成（SNSステップ2）。
 """
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import subprocess
@@ -22,6 +23,7 @@ import build_public_report as bpr
 LOGGER = logging.getLogger("sns_reel")
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_PATH = ROOT_DIR / "config" / "config.json"
 DEFAULT_FONT_PATH = ROOT_DIR / "assets" / "fonts" / "NotoSansJP-Regular.ttf"
 MONO_FONT_PATH = ROOT_DIR / "assets" / "fonts" / "JetBrainsMono-Bold.ttf"
 
@@ -36,22 +38,27 @@ SAFE_BOTTOM = 300
 HOOK_DURATION_SEC = 2.0
 # 指標カードは2枚に集約（画面切替を減らす）
 CARD_DURATION_SEC = 5.0
-TEXT_FADE_SEC = 0.45
+TEXT_FADE_SEC = 0.55
 COUNTUP_SEC = 0.9
 ROW_STAGGER_SEC = 0.12
+# フック行ごとのフェード開始ずれ（静止感を抑える）
+HOOK_LINE_STAGGER_SEC = 0.18
 
 # わずかに青みがかったダークネイビー（純黒ではない）
 BG_COLOR = (14, 22, 40)
 CARD_FILL = (20, 30, 52)
 CARD_BORDER = (70, 100, 140)
 HEADER_COLOR = (150, 170, 195)
-FOOTER_COLOR = (130, 150, 175)
+HEADER_DATE_COLOR = (170, 185, 205)
 LABEL_COLOR = (150, 160, 175)
 VALUE_NEUTRAL = (235, 240, 250)
 VALUE_POS = (80, 200, 140)
 # マイナス表示用。背景ネイビーに対して視認しやすい明度・彩度の高い赤
 VALUE_NEG = (255, 138, 128)  # #FF8A80
 HOOK_TEXT_COLOR = (245, 247, 250)
+BADGE_FILL = (32, 48, 72)
+BADGE_BORDER = (90, 130, 170)
+BADGE_TEXT_COLOR = (200, 215, 235)
 
 VALUE_FONT_SIZE = 46
 # 単位(円・%・日・件・回)は数字の約75%（テキストのみの値には使わない）
@@ -60,6 +67,8 @@ UNIT_FONT_SIZE = max(1, int(round(VALUE_FONT_SIZE * UNIT_FONT_RATIO)))
 LABEL_FONT_SIZE = 34
 
 SYSTEM_NAME = "BTC/JPY AUTO-TRADING SYSTEM"
+# 実資金モード時のみ。断定・勧誘ではなく稼働事実のみ。
+REAL_MODE_BADGE_TEXT = "実資金で稼働中"
 
 
 @dataclass(frozen=True)
@@ -90,9 +99,9 @@ HOOK_LAYOUT = HookLayout(
 # 人手レビュー済み。LLMには生成させない。
 # 日替わりで文言だけを変える（描画設定は HOOK_LAYOUT のみ）。
 HOOK_TEXT_PATTERNS: Tuple[Tuple[str, ...], ...] = (
-    ("AIが24時間", "BTC", "自律的に売買中"),
-    ("AI自律運用中", "BTC", "24時間トレード"),
-    ("24時間稼働中", "BTC", "AIが自動売買"),
+    ("AIが実資金で自動売買", "BTC", "24時間稼働中"),
+    ("AIが実資金で運用中", "BTC", "24時間自動売買"),
+    ("実資金でAIが売買", "BTC", "休みなく稼働中"),
 )
 
 
@@ -128,10 +137,15 @@ METRIC_SLIDE_GROUPS: Tuple[Tuple[str, ...], ...] = (
     ),
 )
 
-# カード領域（セーフゾーン内）
+# 固定ヘッダー（セーフゾーン上端内・全フレーム共通）
+HEADER_NAME_Y = SAFE_TOP
+HEADER_DATE_Y = SAFE_TOP + 36
+HEADER_BADGE_Y = SAFE_TOP + 74
+
+# カード領域（セーフゾーン内・ヘッダー下）
 CARD_LEFT = 72
 CARD_RIGHT = VIDEO_WIDTH - 72
-CARD_TOP = SAFE_TOP + 80
+CARD_TOP = SAFE_TOP + 130
 CARD_BOTTOM = VIDEO_HEIGHT - SAFE_BOTTOM - 40
 LABEL_X = CARD_LEFT + 48
 VALUE_RIGHT_X = CARD_RIGHT - 48
@@ -355,60 +369,138 @@ def _split_mono_and_suffix(row: MetricRow, value_text: str) -> Tuple[str, str]:
     return value_text, ""
 
 
+def load_trading_mode(config_path: Path = CONFIG_PATH) -> str:
+    """
+    config.json の trading_mode を返す。
+    ファイル無し・キー無し・不正値は virtual 扱い。
+    """
+    if not config_path.exists():
+        return "virtual"
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        LOGGER.warning("Failed to read config.json; treat as virtual: %s", exc)
+        return "virtual"
+    if not isinstance(payload, dict):
+        return "virtual"
+    mode = str(payload.get("trading_mode", "virtual")).strip().lower()
+    if mode not in {"virtual", "real"}:
+        return "virtual"
+    return mode
+
+
+def _draw_fixed_header(
+    draw: ImageDraw.ImageDraw,
+    target_date: str,
+    *,
+    trading_mode: str,
+    label_font_path: Path,
+) -> None:
+    """全フレーム共通の固定ヘッダー（システム名・日付・任意で実資金バッジ）。"""
+    name_font = _load_font(28, label_font_path)
+    date_font = _load_font(30, label_font_path)
+    badge_font = _load_font(24, label_font_path)
+
+    hb = draw.textbbox((0, 0), SYSTEM_NAME, font=name_font)
+    hw = hb[2] - hb[0]
+    draw.text(
+        ((VIDEO_WIDTH - hw) // 2, HEADER_NAME_Y),
+        SYSTEM_NAME,
+        font=name_font,
+        fill=HEADER_COLOR,
+    )
+
+    db = draw.textbbox((0, 0), target_date, font=date_font)
+    dw = db[2] - db[0]
+    draw.text(
+        ((VIDEO_WIDTH - dw) // 2, HEADER_DATE_Y),
+        target_date,
+        font=date_font,
+        fill=HEADER_DATE_COLOR,
+    )
+
+    if trading_mode == "real":
+        pad_x = 18
+        pad_y = 8
+        bb = draw.textbbox((0, 0), REAL_MODE_BADGE_TEXT, font=badge_font)
+        tw = bb[2] - bb[0]
+        th = bb[3] - bb[1]
+        box_w = tw + pad_x * 2
+        box_h = th + pad_y * 2
+        left = (VIDEO_WIDTH - box_w) // 2
+        top = HEADER_BADGE_Y
+        draw.rounded_rectangle(
+            (left, top, left + box_w, top + box_h),
+            radius=14,
+            fill=BADGE_FILL,
+            outline=BADGE_BORDER,
+            width=2,
+        )
+        draw.text(
+            (left + pad_x, top + pad_y - 2),
+            REAL_MODE_BADGE_TEXT,
+            font=badge_font,
+            fill=BADGE_TEXT_COLOR,
+        )
+
+
 def build_background_template(
     target_date: str,
     *,
     label_font_path: Path = DEFAULT_FONT_PATH,
+    trading_mode: str = "virtual",
+    show_card_frame: bool = True,
 ) -> Image.Image:
     """
-    枠線・ヘッダー/フッター込みの背景テンプレートを1枚生成する。
+    固定ヘッダー込みの背景テンプレートを1枚生成する。
     動的テキストはこの上の指定座標にのみ描画する。
     """
     img = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
+    mode = str(trading_mode or "virtual").strip().lower()
+    if mode not in {"virtual", "real"}:
+        mode = "virtual"
 
-    header_font = _load_font(28, label_font_path)
-    footer_font = _load_font(30, label_font_path)
-
-    # ヘッダー（セーフゾーン上端付近・中立表記のみ）
-    header = SYSTEM_NAME
-    hb = draw.textbbox((0, 0), header, font=header_font)
-    hw = hb[2] - hb[0]
-    draw.text(
-        ((VIDEO_WIDTH - hw) // 2, SAFE_TOP - 8),
-        header,
-        font=header_font,
-        fill=HEADER_COLOR,
+    _draw_fixed_header(
+        draw,
+        target_date,
+        trading_mode=mode,
+        label_font_path=label_font_path,
     )
 
-    # カード枠
-    radius = 28
-    draw.rounded_rectangle(
-        (CARD_LEFT, CARD_TOP, CARD_RIGHT, CARD_BOTTOM),
-        radius=radius,
-        fill=CARD_FILL,
-        outline=CARD_BORDER,
-        width=3,
-    )
-
-    # フッター（日付のみ・稼働断定なし）
-    footer = target_date
-    fb = draw.textbbox((0, 0), footer, font=footer_font)
-    fw = fb[2] - fb[0]
-    draw.text(
-        ((VIDEO_WIDTH - fw) // 2, VIDEO_HEIGHT - SAFE_BOTTOM + 36),
-        footer,
-        font=footer_font,
-        fill=FOOTER_COLOR,
-    )
+    if show_card_frame:
+        radius = 28
+        draw.rounded_rectangle(
+            (CARD_LEFT, CARD_TOP, CARD_RIGHT, CARD_BOTTOM),
+            radius=radius,
+            fill=CARD_FILL,
+            outline=CARD_BORDER,
+            width=3,
+        )
     return img
+
+
+def _hook_line_alphas(
+    frame_index: int,
+    fps: int,
+    line_count: int,
+) -> List[float]:
+    """フック各行のフェード進捗（行ごとに開始をずらし静止感を抑える）。"""
+    fade_frames = max(1, int(round(TEXT_FADE_SEC * fps)))
+    stagger = max(1, int(round(HOOK_LINE_STAGGER_SEC * fps)))
+    alphas: List[float] = []
+    for i in range(line_count):
+        local = frame_index - i * stagger
+        alphas.append(min(1.0, max(0.0, (local + 1) / fade_frames)))
+    return alphas
 
 
 def _draw_hook_on_template(
     template: Image.Image,
     hook_text: str,
     *,
-    alpha: float,
+    alpha: float = 1.0,
+    line_alphas: Optional[Sequence[float]] = None,
     font_path: Path = DEFAULT_FONT_PATH,
     layout: HookLayout = HOOK_LAYOUT,
 ) -> Image.Image:
@@ -419,7 +511,6 @@ def _draw_hook_on_template(
     base = template.convert("RGBA")
     overlay = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    a = max(0, min(255, int(round(255 * alpha))))
     lines = hook_text.split("\n")
     if len(lines) != layout.line_count:
         raise ValueError(
@@ -432,6 +523,16 @@ def _draw_hook_on_template(
             f"emphasize_line_index out of range: {emp_i} "
             f"(line_count={layout.line_count})"
         )
+
+    if line_alphas is None:
+        alphas = [alpha] * layout.line_count
+    else:
+        if len(line_alphas) != layout.line_count:
+            raise ValueError(
+                f"line_alphas must have {layout.line_count} entries, "
+                f"got {len(line_alphas)}"
+            )
+        alphas = [float(a) * float(alpha) for a in line_alphas]
 
     normal_font = _load_font(layout.normal_font_size, font_path)
     emphasize_font = _load_font(layout.emphasize_font_size, font_path)
@@ -450,7 +551,13 @@ def _draw_hook_on_template(
     total_h = sum(heights) + line_gap * (len(lines) - 1)
     center_y = (CARD_TOP + CARD_BOTTOM) // 2
     y = center_y - total_h // 2
-    for i, (line, w, h, font) in enumerate(zip(lines, widths, heights, fonts)):
+    for i, (line, w, h, font, line_a) in enumerate(
+        zip(lines, widths, heights, fonts, alphas)
+    ):
+        a = max(0, min(255, int(round(255 * line_a))))
+        if a <= 0:
+            y += h + line_gap
+            continue
         x = (VIDEO_WIDTH - w) // 2
         fill = (*HOOK_TEXT_COLOR, a)
         if layout.fake_bold_on_emphasize and i == emp_i:
@@ -623,13 +730,36 @@ def generate_sns_reel_video(
     mono_font_path: Path = MONO_FONT_PATH,
     fps: int = FPS,
     work_dir: Optional[Path] = None,
+    trading_mode: Optional[str] = None,
+    config_path: Path = CONFIG_PATH,
 ) -> Path:
     """
     許可リスト済み public から Instagram リール向け無音 mp4 を生成する。
+    trading_mode 未指定時は config.json の値を参照する。
     """
     bpr.assert_only_allowed_keys(public)
     hook, cards = build_reel_cards(target_date, public)
-    template = build_background_template(target_date, label_font_path=font_path)
+    mode = (
+        str(trading_mode).strip().lower()
+        if trading_mode is not None
+        else load_trading_mode(config_path)
+    )
+    if mode not in {"virtual", "real"}:
+        mode = "virtual"
+
+    # フック中も同じ固定ヘッダーを出し、空のカード枠は出さない
+    hook_template = build_background_template(
+        target_date,
+        label_font_path=font_path,
+        trading_mode=mode,
+        show_card_frame=False,
+    )
+    card_template = build_background_template(
+        target_date,
+        label_font_path=font_path,
+        trading_mode=mode,
+        show_card_frame=True,
+    )
 
     cleanup_work = False
     if work_dir is None:
@@ -640,13 +770,14 @@ def generate_sns_reel_video(
 
     frame_paths: List[Path] = []
     try:
-        # フック: 背景は固定、テキストのみフェードイン（画面全体の暗転なし）
+        # フック: 固定ヘッダー上で行ごとにフェードイン
         hook_n = max(1, int(round(HOOK_DURATION_SEC * fps)))
-        fade_frames = max(1, int(round(TEXT_FADE_SEC * fps)))
         for i in range(hook_n):
-            alpha = min(1.0, (i + 1) / fade_frames)
             frame = _draw_hook_on_template(
-                template, hook, alpha=alpha, font_path=font_path
+                hook_template,
+                hook,
+                line_alphas=_hook_line_alphas(i, fps, HOOK_LAYOUT.line_count),
+                font_path=font_path,
             )
             path = work_dir / f"frame_{len(frame_paths):05d}.png"
             frame.save(path, format="PNG")
@@ -657,7 +788,7 @@ def generate_sns_reel_video(
         for rows in cards:
             for i in range(card_n):
                 frame = _draw_card_rows_on_template(
-                    template,
+                    card_template,
                     rows,
                     frame_index=i,
                     fps=fps,

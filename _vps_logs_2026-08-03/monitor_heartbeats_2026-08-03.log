@@ -1,0 +1,756 @@
+﻿[2026-08-03 00:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 1s max_age=2h 0m 0s
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 00:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 41s max_age=0h 20m 0s
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 41s max_age=0h 20m 0s
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 00:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 41s max_age=0h 20m 0s
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 42s max_age=0h 20m 0s
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 00:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 00:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 01:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 01:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 01:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 01:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 01:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 02:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 02:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 02:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 02:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 03:00:02] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 0m 1s max_age=2h 0m 0s
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 03:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 03:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 1s max_age=2h 0m 0s
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 03:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 03:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 1s max_age=2h 0m 0s
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 04:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 04:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 04:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 04:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 04:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 04:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 05:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 05:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 05:15:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 05:15:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 50s max_age=0h 20m 0s
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 50s max_age=0h 20m 0s
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 05:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 05:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 06:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 06:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 2s max_age=0h 20m 0s
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 2s max_age=0h 20m 0s
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 06:15:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 06:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 06:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 06:45:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 07:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 07:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 07:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 07:45:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 08:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 08:15:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 08:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 08:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 46s max_age=0h 20m 0s
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 46s max_age=0h 20m 0s
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 09:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 09:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 09:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 09:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 54s max_age=0h 20m 0s
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 53s max_age=0h 20m 0s
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 10:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 10:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 0m 0s max_age=0h 20m 0s
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 1s max_age=0h 20m 0s
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 10:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 10:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 2s max_age=0h 20m 0s
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 2s max_age=0h 20m 0s
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 11:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 11:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 11:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 11:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 12:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 12:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 12:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 12:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 12:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 45m 0s max_age=2h 0m 0s
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 12:45:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 59m 58s max_age=2h 0m 0s
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 13:00:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 13:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 13:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 13:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 13:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 13:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 52s max_age=0h 20m 0s
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 52s max_age=0h 20m 0s
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 14:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 56s max_age=2h 0m 0s
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 14:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 2s max_age=0h 20m 0s
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 58s max_age=2h 0m 0s
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 2s max_age=0h 20m 0s
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 14:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 14:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 14:45:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 59m 58s max_age=2h 0m 0s
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 15:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 15:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 59s max_age=2h 0m 0s
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 15:15:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 15:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 57s max_age=0h 20m 0s
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 57s max_age=0h 20m 0s
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 15:45:00] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 0m 0s max_age=2h 0m 0s
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 16:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 16:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 16:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 9m 58s max_age=0h 20m 0s
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 16:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 16:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 58s max_age=2h 0m 0s
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 16:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=1h 0m 0s max_age=2h 0m 0s
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 17:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 17:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 17:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 17:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 50s max_age=0h 20m 0s
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 50s max_age=0h 20m 0s
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 17:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 57s max_age=2h 0m 0s
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 53s max_age=0h 20m 0s
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 17:45:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 49s max_age=0h 20m 0s
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 18:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 49s max_age=0h 20m 0s
+[2026-08-03 18:00:04] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 18:00:04] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 57s max_age=2h 0m 0s
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 18:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 53s max_age=0h 20m 0s
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 29m 59s max_age=2h 0m 0s
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 53s max_age=0h 20m 0s
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 18:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 45m 16s max_age=2h 0m 0s
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 17s max_age=0h 20m 0s
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 45m 16s max_age=2h 0m 0s
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 17s max_age=0h 20m 0s
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 18:45:20] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 0s max_age=0h 20m 0s
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 19:00:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 14m 58s max_age=2h 0m 0s
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 19:15:01] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 58s max_age=0h 20m 0s
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 0s max_age=2h 0m 0s
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 57s max_age=0h 20m 0s
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 19:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 19:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 44m 59s max_age=2h 0m 0s
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 19:45:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 42s max_age=0h 20m 0s
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 59m 59s max_age=2h 0m 0s
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 42s max_age=0h 20m 0s
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 20:00:02] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 15m 18s max_age=2h 0m 0s
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 5m 17s max_age=0h 20m 0s
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 15m 18s max_age=2h 0m 0s
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 5m 17s max_age=0h 20m 0s
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 20:15:20] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 30m 1s max_age=2h 0m 0s
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 30m 1s max_age=2h 0m 0s
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 43s max_age=0h 20m 0s
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 20:30:03] [INFO] [monitor_heartbeats] Lock file removed.
+[2026-08-03 20:45:01] [INFO] [monitor_heartbeats] Running check_monitor_heartbeats.py
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] Loaded heartbeats keys=['check_csv_db_consistency', 'check_engine_crash_loop', 'check_orphan_orders', 'check_trading_anomaly']
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] check_trading_anomaly ok elapsed=0h 45m 0s max_age=2h 0m 0s
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] check_engine_crash_loop ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] check_csv_db_consistency ok elapsed=0h 45m 0s max_age=2h 0m 0s
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] No heartbeat yet for check_engine_process; skip (bootstrap / never succeeded).
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] check_orphan_orders ok elapsed=0h 4m 59s max_age=0h 20m 0s
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] check_monitor_heartbeats.py completed successfully
+[2026-08-03 20:45:02] [INFO] [monitor_heartbeats] Lock file removed.

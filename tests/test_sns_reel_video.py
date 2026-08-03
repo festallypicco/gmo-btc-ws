@@ -5,7 +5,7 @@ Instagramリール動画生成の許可リスト境界・固定フック・フ�
 """
 from __future__ import annotations
 
-import hashlib
+import json
 import sys
 from pathlib import Path
 from typing import Dict
@@ -20,13 +20,6 @@ if str(_SCRIPTS) not in sys.path:
 import build_public_report as bpr  # noqa: E402
 import build_sns_report as sns  # noqa: E402
 import sns_reel_video as reel  # noqa: E402
-
-# リファクタ前に固定したフック画面ピクセルハッシュ（見た目退行検知用）
-_HOOK_FRAME_SHA256 = (
-    "d2b196eb1a2ded3451303816c5f0c9ef5c42d39153129e3a23c44a1f5272a186",
-    "58f4fc3ab3659ed15b6982d02aea3efc88c9e6120b24aa17f9139a3327147a2b",
-    "bfa5196bd7dfe0ae2374f0be23e507c0580dd6f5cf9d1206b1f0565ed0a326e0",
-)
 
 
 def _allowed_public() -> Dict[str, object]:
@@ -43,6 +36,12 @@ def _allowed_public() -> Dict[str, object]:
     }
 
 
+def _header_strip(img) -> bytes:
+    """固定ヘッダー領域（システム名・日付・バッジ）のピクセル。"""
+    bottom = reel.CARD_TOP - 8
+    return img.crop((0, reel.SAFE_TOP, reel.VIDEO_WIDTH, bottom)).tobytes()
+
+
 def test_hook_text_and_layout_are_separated() -> None:
     """文言データと共通レイアウトが分離され、全パターンが同一ルールに従うこと。"""
     layout = reel.HOOK_LAYOUT
@@ -55,9 +54,9 @@ def test_hook_text_and_layout_are_separated() -> None:
 
     assert len(reel.HOOK_TEXT_PATTERNS) == 3
     expected = (
-        ("AIが24時間", "BTC", "自律的に売買中"),
-        ("AI自律運用中", "BTC", "24時間トレード"),
-        ("24時間稼働中", "BTC", "AIが自動売買"),
+        ("AIが実資金で自動売買", "BTC", "24時間稼働中"),
+        ("AIが実資金で運用中", "BTC", "24時間自動売買"),
+        ("実資金でAIが売買", "BTC", "休みなく稼働中"),
     )
     assert reel.HOOK_TEXT_PATTERNS == expected
 
@@ -68,8 +67,7 @@ def test_hook_text_and_layout_are_separated() -> None:
     # 後方互換テキストは文言タプルから導出される
     assert reel.HOOK_TEMPLATES == tuple("\n".join(p) for p in reel.HOOK_TEXT_PATTERNS)
     assert reel.HOOK_TEMPLATES[1] == reel.HOOK_BTC_EMPHASIS
-    assert "自律" in reel.HOOK_BTC_EMPHASIS
-    assert "自立" not in reel.HOOK_BTC_EMPHASIS
+    assert "実資金" in reel.HOOK_BTC_EMPHASIS
 
     for day in ("2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23"):
         assert reel.select_hook_lines(day) in reel.HOOK_TEXT_PATTERNS
@@ -79,14 +77,67 @@ def test_hook_text_and_layout_are_separated() -> None:
     assert hooks.issubset(set(reel.HOOK_TEMPLATES))
 
 
-def test_hook_frames_match_pre_refactor_pixels() -> None:
-    """リファクタ後もフック画面の見た目が完全に同一であること。"""
-    template = reel.build_background_template("2026-07-24")
-    assert len(reel.HOOK_TEMPLATES) == len(_HOOK_FRAME_SHA256)
-    for hook, expected in zip(reel.HOOK_TEMPLATES, _HOOK_FRAME_SHA256):
-        img = reel._draw_hook_on_template(template, hook, alpha=1.0)
-        digest = hashlib.sha256(img.tobytes()).hexdigest()
-        assert digest == expected, f"hook visual changed: {hook!r}"
+def test_fixed_header_present_on_hook_and_card_templates() -> None:
+    """フック／カード双方で同一の固定ヘッダー（システム名＋日付）を持つ。"""
+    hook_bg = reel.build_background_template(
+        "2026-07-24",
+        trading_mode="virtual",
+        show_card_frame=False,
+    )
+    card_bg = reel.build_background_template(
+        "2026-07-24",
+        trading_mode="virtual",
+        show_card_frame=True,
+    )
+    assert hook_bg.size == (reel.VIDEO_WIDTH, reel.VIDEO_HEIGHT)
+    assert _header_strip(hook_bg) == _header_strip(card_bg)
+    # ヘッダー領域が背景色だけではない（テキストが描かれている）
+    assert _header_strip(hook_bg) != bytes(
+        [reel.BG_COLOR[0], reel.BG_COLOR[1], reel.BG_COLOR[2]]
+    ) * (len(_header_strip(hook_bg)) // 3)
+
+
+def test_real_mode_badge_toggles_with_trading_mode() -> None:
+    virtual = reel.build_background_template(
+        "2026-07-24", trading_mode="virtual", show_card_frame=False
+    )
+    real = reel.build_background_template(
+        "2026-07-24", trading_mode="real", show_card_frame=False
+    )
+    assert _header_strip(virtual) != _header_strip(real)
+    assert "LIVE" not in reel.REAL_MODE_BADGE_TEXT
+    assert "RUNNING" not in reel.REAL_MODE_BADGE_TEXT
+    assert "実資金" in reel.REAL_MODE_BADGE_TEXT
+
+
+def test_load_trading_mode_from_config(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.json"
+    cfg.write_text(json.dumps({"trading_mode": "real"}), encoding="utf-8")
+    assert reel.load_trading_mode(cfg) == "real"
+    cfg.write_text(json.dumps({"trading_mode": "virtual"}), encoding="utf-8")
+    assert reel.load_trading_mode(cfg) == "virtual"
+    assert reel.load_trading_mode(tmp_path / "missing.json") == "virtual"
+
+
+def test_hook_line_fade_is_animated() -> None:
+    """フック中は行フェードが進み、序盤フレームと終盤フレームが異なる。"""
+    template = reel.build_background_template(
+        "2026-07-24", trading_mode="real", show_card_frame=False
+    )
+    hook = reel.HOOK_TEMPLATES[0]
+    early = reel._draw_hook_on_template(
+        template,
+        hook,
+        line_alphas=reel._hook_line_alphas(0, fps=24, line_count=3),
+    )
+    late = reel._draw_hook_on_template(
+        template,
+        hook,
+        line_alphas=reel._hook_line_alphas(40, fps=24, line_count=3),
+    )
+    assert early.tobytes() != late.tobytes()
+    # ヘッダーはフェード対象外で同一
+    assert _header_strip(early) == _header_strip(late)
 
 
 def test_reel_slides_use_only_allowed_keys() -> None:
@@ -101,7 +152,7 @@ def test_reel_slides_use_only_allowed_keys() -> None:
         assert word.lower() not in blob.lower()
     assert "累積損益" in blob
     assert "当日勝率" in blob
-    # LIVE/RUNNING 等の稼働断定表現を出さない
+    # フック／スライド本文に LIVE/RUNNING 断定は出さない（バッジは別レイヤ）
     for banned in ("LIVE", "RUNNING", "NORMAL"):
         assert banned not in blob
         assert banned not in hook
@@ -159,7 +210,7 @@ def test_bundled_mono_font_exists() -> None:
 
 
 def test_background_template_has_neutral_chrome_only() -> None:
-    img = reel.build_background_template("2026-07-22")
+    img = reel.build_background_template("2026-07-22", trading_mode="virtual")
     assert img.size == (reel.VIDEO_WIDTH, reel.VIDEO_HEIGHT)
     # 純黒ではないネイビー系
     assert img.getpixel((10, 10)) == reel.BG_COLOR
@@ -250,6 +301,7 @@ def test_generate_reel_video_smoke(tmp_path: Path) -> None:
         reel.TEXT_FADE_SEC,
         reel.COUNTUP_SEC,
         reel.ROW_STAGGER_SEC,
+        reel.HOOK_LINE_STAGGER_SEC,
     )
     try:
         reel.HOOK_DURATION_SEC = 0.4
@@ -257,12 +309,14 @@ def test_generate_reel_video_smoke(tmp_path: Path) -> None:
         reel.TEXT_FADE_SEC = 0.1
         reel.COUNTUP_SEC = 0.2
         reel.ROW_STAGGER_SEC = 0.05
+        reel.HOOK_LINE_STAGGER_SEC = 0.04
         path = reel.generate_sns_reel_video(
             "2026-07-22",
             public,
             out,
             fps=8,
             work_dir=tmp_path / "frames",
+            trading_mode="real",
         )
     finally:
         (
@@ -271,6 +325,7 @@ def test_generate_reel_video_smoke(tmp_path: Path) -> None:
             reel.TEXT_FADE_SEC,
             reel.COUNTUP_SEC,
             reel.ROW_STAGGER_SEC,
+            reel.HOOK_LINE_STAGGER_SEC,
         ) = original
     assert path.exists()
     assert path.stat().st_size > 1000

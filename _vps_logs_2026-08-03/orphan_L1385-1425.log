@@ -1,0 +1,41 @@
+﻿[2026-08-03 19:10:03] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:15:01] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:15:01] [INFO] [orphan_orders_check] known order ids from live_state: [8777556743]
+[2026-08-03 19:15:02] [INFO] [orphan_orders_check] No orphan orders. active=0 known=1
+[2026-08-03 19:15:02] [INFO] [orphan_orders_check] orphan order check finished: ok
+[2026-08-03 19:15:02] [INFO] [orphan_orders_check] check_orphan_orders.py completed successfully
+[2026-08-03 19:15:02] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:20:03] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:20:03] [INFO] [orphan_orders_check] known order ids from live_state: [8777574576]
+[2026-08-03 19:20:03] [INFO] [orphan_orders_check] No orphan orders. active=1 known=1
+[2026-08-03 19:20:03] [INFO] [orphan_orders_check] orphan order check finished: ok
+[2026-08-03 19:20:03] [INFO] [orphan_orders_check] check_orphan_orders.py completed successfully
+[2026-08-03 19:20:03] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:25:05] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:25:05] [INFO] [orphan_orders_check] known order ids from live_state: []
+[2026-08-03 19:25:05] [WARNING] [orphan_orders_check] [ALERT] orphan GMO active order(s) detected | count=1 | detail=orders not tracked by entry/tp/sl_order_id in live_state.db | action=manual review required (no auto-cancel) | [1] orderId=8777584361 side=SELL price=9854942 size=0.001
+[2026-08-03 19:25:06] [INFO] [orphan_orders_check] orphan order check finished: orphan_detected
+[2026-08-03 19:25:06] [INFO] [orphan_orders_check] check_orphan_orders.py completed successfully
+[2026-08-03 19:25:06] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:30:03] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:30:03] [INFO] [orphan_orders_check] known order ids from live_state: []
+[2026-08-03 19:30:03] [INFO] [orphan_orders_check] No orphan orders. active=0 known=0
+[2026-08-03 19:30:03] [INFO] [orphan_orders_check] orphan order check finished: ok
+[2026-08-03 19:30:03] [INFO] [orphan_orders_check] check_orphan_orders.py completed successfully
+[2026-08-03 19:30:03] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:35:10] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:35:11] [INFO] [orphan_orders_check] known order ids from live_state: [8777608034]
+[2026-08-03 19:35:11] [INFO] [orphan_orders_check] No orphan orders. active=0 known=1
+[2026-08-03 19:35:11] [INFO] [orphan_orders_check] orphan order check finished: ok
+[2026-08-03 19:35:11] [INFO] [orphan_orders_check] check_orphan_orders.py completed successfully
+[2026-08-03 19:35:11] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:40:03] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:40:03] [INFO] [orphan_orders_check] known order ids from live_state: [8777617626]
+[2026-08-03 19:40:03] [INFO] [orphan_orders_check] No orphan orders. active=1 known=1
+[2026-08-03 19:40:03] [INFO] [orphan_orders_check] orphan order check finished: ok
+[2026-08-03 19:40:03] [INFO] [orphan_orders_check] check_orphan_orders.py completed successfully
+[2026-08-03 19:40:03] [INFO] [orphan_orders_check] Lock file removed.
+[2026-08-03 19:45:01] [INFO] [orphan_orders_check] Running check_orphan_orders.py
+[2026-08-03 19:45:02] [INFO] [orphan_orders_check] known order ids from live_state: [8777629131]
+[2026-08-03 19:45:02] [INFO] [orphan_orders_check] No orphan orders. active=1 known=1
+[2026-08-03 19:45:02] [INFO] [orphan_orders_check] orphan order check finished: ok

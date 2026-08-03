@@ -151,6 +151,10 @@ _FORCE_CLOSE_REAL_ALERT_COOLDOWN_SEC = 60.0
 # closeOrder 後の openPositions 反映待ち（確認専用）
 _FORCE_CLOSE_CONFIRM_MAX_CHECKS = 3
 _FORCE_CLOSE_CONFIRM_RETRY_SEC = 1.0
+# 板TP: closeOrder 受理後の confirm/settle 再試行
+# （2026-08-03: ERR-5008 で settle 中断→内部建玉残留を防ぐ）
+_BOARD_TP_SETTLE_MAX_ATTEMPTS = 3
+_BOARD_TP_SETTLE_RETRY_SEC = 1.0
 # cancelOrder が「すでに約定/取消済み等」で対象外のときの正常系コード
 _CANCEL_ORDER_BENIGN_CODES = frozenset({"ERR-5122", "ERR-5123"})
 # ---------------------------------------------------------------------- #
@@ -2362,6 +2366,7 @@ class VirtualTrader:
         sl_order_id = pos.sl_order_id
         size = float(pos.size)
         fill_price = float(pos.exit_price_target)
+        position_side = pos.side
         if pos.side == "LONG":
             exit_side = "SELL"
         else:
@@ -2385,22 +2390,54 @@ class VirtualTrader:
                 )
             except GmoApiError as exc:
                 if is_benign_cancel_error(exc):
-                    # c. SL が先に約定済み等: 市場決済せず、WS 経路に委ねる
+                    # 2026-08-03: benign(5122/5123)でも内部建玉が残ると
+                    # return のみでは宙に浮く。openPositions で分岐する。
+                    try:
+                        open_positions = fetch_open_positions()
+                    except Exception as fetch_exc:
+                        self._emit_critical_alert(
+                            "[CRITICAL] REAL MODE BOARD TP SL CANCEL BENIGN"
+                            " BUT OPEN POSITIONS FETCH FAILED\n"
+                            "detail=cannot decide settle vs market close\n"
+                            f"side={position_side}\n"
+                            f"position_id={position_id}\n"
+                            f"sl_order_id={sl_order_id}\n"
+                            f"error={fetch_exc}"
+                        )
+                        return
+                    still_open = any(
+                        int(item.get("positionId", -1)) == int(position_id)
+                        for item in open_positions
+                    )
+                    if not still_open:
+                        self._safe_console_print(
+                            f"[{ts}] [OK] [REAL-TP] SL cancel benign"
+                            f" and position flat; settle internal"
+                            f" orderId={sl_order_id} codes={exc.message_codes}"
+                        )
+                        self._finalize_real_board_tp_settle_unlocked(
+                            snap=snap,
+                            position_side=position_side,
+                            size=size,
+                            fill_price=fill_price,
+                            close_oid=None,
+                        )
+                        return
                     self._safe_console_print(
                         f"[{ts}] [OK] [REAL-TP] SL cancel benign"
-                        f" (already done); skip market close"
+                        f" but position remains; continue market close"
                         f" orderId={sl_order_id} codes={exc.message_codes}"
                     )
+                else:
+                    self._emit_critical_alert(
+                        "[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED\n"
+                        "detail=SL cancel failed; position may be unprotected\n"
+                        f"side={pos.side}\n"
+                        f"position_id={position_id}\n"
+                        f"sl_order_id={sl_order_id}\n"
+                        f"error={exc}"
+                    )
                     return
-                self._emit_critical_alert(
-                    "[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED\n"
-                    "detail=SL cancel failed; position may be unprotected\n"
-                    f"side={pos.side}\n"
-                    f"position_id={position_id}\n"
-                    f"sl_order_id={sl_order_id}\n"
-                    f"error={exc}"
-                )
-                return
             except Exception as exc:
                 self._emit_critical_alert(
                     "[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED\n"
@@ -2438,27 +2475,78 @@ class VirtualTrader:
             )
             return
 
-        if not self._confirm_real_position_closed_unlocked(
-            position_id=int(position_id),
-            context="REAL-TP",
-        ):
+        # c. closeOrder 受理後の confirm/settle は独立保護
+        # （2026-08-03: コールバック内 ERR-5008 で settle が中断された）
+        settle_ok = False
+        last_settle_exc: Optional[BaseException] = None
+        for settle_i in range(1, _BOARD_TP_SETTLE_MAX_ATTEMPTS + 1):
+            try:
+                if self.position.side is None or self.position.is_pending:
+                    # 直前試行で settle 済み（sync のみ失敗したケース）
+                    self._sync_jpy_balance_from_equity_unlocked(context="REAL-TP")
+                    settle_ok = True
+                    break
+                if not self._confirm_real_position_closed_unlocked(
+                    position_id=int(position_id),
+                    context="REAL-TP",
+                ):
+                    raise RuntimeError(
+                        "market close sent but position still open"
+                    )
+                self._finalize_real_board_tp_settle_unlocked(
+                    snap=snap,
+                    position_side=position_side,
+                    size=size,
+                    fill_price=fill_price,
+                    close_oid=close_oid,
+                )
+                settle_ok = True
+                break
+            except Exception as settle_exc:
+                last_settle_exc = settle_exc
+                self._safe_console_print(
+                    f"[{ts}] [WARN] [REAL-TP] confirm/settle attempt"
+                    f" {settle_i}/{_BOARD_TP_SETTLE_MAX_ATTEMPTS}"
+                    f" failed: {settle_exc}"
+                )
+                if settle_i < _BOARD_TP_SETTLE_MAX_ATTEMPTS:
+                    time.sleep(_BOARD_TP_SETTLE_RETRY_SEC)
+        if not settle_ok:
             self._emit_critical_alert(
-                "[CRITICAL] REAL MODE BOARD TP CONFIRM FAILED\n"
-                "detail=market close sent but position still open\n"
-                f"side={pos.side}\n"
+                "[CRITICAL] REAL MODE BOARD TP SETTLE FAILED\n"
+                "detail=closeOrder accepted but confirm/settle did not"
+                " complete; internal position may remain\n"
+                f"side={position_side}\n"
                 f"position_id={position_id}\n"
-                f"sl_order_id={sl_order_id}"
+                f"sl_order_id={sl_order_id}\n"
+                f"close_order_id={close_oid}\n"
+                f"error={last_settle_exc}"
             )
-            return
 
+    def _finalize_real_board_tp_settle_unlocked(
+        self,
+        *,
+        snap: OrderbookSnapshot,
+        position_side: str,
+        size: float,
+        fill_price: float,
+        close_oid: Optional[Any],
+    ) -> None:
+        """板TPの内部決済 + equity 同期（closeOrder 有無どちらからも呼ぶ）。"""
+        ts = datetime.now().strftime("%H:%M:%S")
         if fill_price <= 0:
             fill_price = (
                 float(snap.best_bid_price)
-                if pos.side == "LONG"
+                if position_side == "LONG"
                 else float(snap.best_ask_price)
             )
         target_fill_price = fill_price
-        actual_price, actual_fee = gmo_fetch_order_execution_fill(int(close_oid))
+        actual_price: Optional[float] = None
+        actual_fee: Optional[int] = None
+        if close_oid is not None:
+            actual_price, actual_fee = gmo_fetch_order_execution_fill(
+                int(close_oid)
+            )
         if actual_price is not None and actual_price > 0:
             fill_price = float(actual_price)
         else:

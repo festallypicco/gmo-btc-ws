@@ -1,0 +1,16 @@
+﻿[SKIP] entry blocked by cooldown: side=SELL price=9,857,119 elapsed=2.972 cooldown_sec=5
+[SKIP] entry blocked by cooldown: side=SELL price=9,857,119 elapsed=3.478 cooldown_sec=5
+[+] [19:24:15] SELL(MAKER)  萓｡譬ｼ:     9,857,119 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 11.1%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:24:15] [OK] [REAL-ORDER] SHORT orderId=8777584162 @ 9,857,119 JPY  size=0.0010 BTC  pending=True
+[19:24:39] [OK] real entry cancel accepted: orderId=8777584162 context=IMBALANCE_REVERSAL
+[+] [19:24:39] SELL(MAKER)  萓｡譬ｼ:     9,857,119 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 92.6%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:24:39] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,857,119 JPY  imbalance=92.6%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:25:05] SELL(MAKER)  萓｡譬ｼ:     9,854,942 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 3.9%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:25:05] [OK] [REAL-ORDER] SHORT orderId=8777584361 @ 9,854,942 JPY  size=0.0010 BTC  pending=True
+[19:25:43] [OK] real entry cancel accepted: orderId=8777584361 context=IMBALANCE_REVERSAL
+[+] [19:25:43] SELL(MAKER)  萓｡譬ｼ:     9,854,942 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 94.0%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:25:43] [WARN] [ORDER-CANCEL]  side=SHORT  limit=9,854,942 JPY  imbalance=94.0%  cancel_reason=IMBALANCE_REVERSAL
+[+] [19:26:11] SELL(MAKER)  萓｡譬ｼ:     9,849,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 1.8%  [ENTRY_PENDING]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY
+[19:26:11] [OK] [REAL-ORDER] SHORT orderId=8777584623 @ 9,849,279 JPY  size=0.0010 BTC  pending=True
+[19:26:39] [OK] real entry cancel accepted: orderId=8777584623 context=IMBALANCE_REVERSAL
+[+] [19:26:39] SELL(MAKER)  萓｡譬ｼ:     9,849,279 蜀・ 謨ｰ驥・ 0.001000 BTC  謳咲寢: +         0 蜀・ 謇区焚譁・ +0 蜀・ Imbalance: 94.4%  [CANCEL_ORDER]  | total_assets:        55,149 JPY  | realized_pnl:     +5,149 JPY

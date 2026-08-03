@@ -1,0 +1,78 @@
+﻿412:[WebSocketManager] 繧ｳ繝ｼ繝ｫ繝舌ャ繧ｯ萓句､・ GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+620:[WARN] [Reconciliation] 蜿｣蠎ｧ荳堺ｸ閾ｴ繧呈､懃衍・・蝗樒岼・峨・position_diff=0.001000 BTC balance_diff=6 JPY 谺｡蝗槭ｂ荳堺ｸ閾ｴ縺ｪ繧・manual_stop 繧堤匱蜍輔＠縺ｾ縺吶・653:[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED
+658:error=GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+730:[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED
+735:error=GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+779:[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED
+784:error=GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+794:[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED
+799:error=GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+1131:[CRITICAL] REAL MODE BOARD TP SL CANCEL FAILED
+1136:error=GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+1244:[WARNING] [ALERT] circuit breaker safety stop
+1245:reason=reconciliation_mismatch
+1250:position_diff_btc=0.001
+1253:manual_stop.flag created
+1254:[06:10:08] [WARN] [FORCE-CLOSE: real] start  side=LONG pending=False  tp_order_id=None sl_order_id=8775331871
+1255:[06:10:08] [OK] [FORCE-CLOSE: real] cancel sl skipped (already done) orderId=8775331871 codes=['ERR-5122']
+1256:[06:10:08] [OK] [FORCE-CLOSE: real] no open positions; skip closeOrder
+1257:[06:10:08] [OK] [FORCE-CLOSE: real] synced jpy_balance from equity_jpy=55,164
+1259:[Engine] manual stop requested and position is flat. entering PAUSED wait loop (process stays alive).
+1265:[Engine] manual_stop.flag cleared; resuming from PAUSED
+1783:[WARNING] [ALERT] circuit breaker safety stop
+1788:manual_stop.flag created
+1789:[Engine] manual stop requested and position is flat. entering PAUSED wait loop (process stays alive).
+1795:[Engine] manual_stop.flag cleared; resuming from PAUSED
+2017:[10:17:24] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2018:[10:17:24] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2019:[10:17:24] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2020:[10:17:24] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2021:[10:17:24] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2172:[13:00:18] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2173:[13:00:18] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2174:[13:00:18] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2175:[13:00:18] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2176:[13:00:18] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2177:[13:00:18] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2709:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2710:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2711:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2712:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2713:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2714:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2715:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2716:[16:06:56] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2717:[16:06:57] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+2962:[16:20:59] [SKIP] real entry order failed: side=SELL price=9,810,078 size=0.0010: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+3033:[WARNING] [ALERT] circuit breaker safety stop
+3038:manual_stop.flag created
+3039:[Engine] manual stop requested and position is flat. entering PAUSED wait loop (process stays alive).
+3045:[Engine] manual_stop.flag cleared; resuming from PAUSED
+3427:[WARNING] [ALERT] circuit breaker safety stop
+3432:manual_stop.flag created
+3433:[Engine] manual stop requested and position is flat. entering PAUSED wait loop (process stays alive).
+3439:[Engine] manual_stop.flag cleared; resuming from PAUSED
+3575:[WARNING] [ALERT] circuit breaker safety stop
+3580:manual_stop.flag created
+3581:[Engine] manual stop requested and position is flat. entering PAUSED wait loop (process stays alive).
+3587:[Engine] manual_stop.flag cleared; resuming from PAUSED
+3700:[17:07:02] [WARN] real entry cancel failed; keeping pending orderId=8777214802 context=IMBALANCE_REVERSAL: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+3722:[17:08:13] [WARN] real entry cancel failed; keeping pending orderId=8777222465 context=IMBALANCE_REVERSAL: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+4386:[WARNING] [ALERT] circuit breaker safety stop
+4391:manual_stop.flag created
+4392:[Engine] manual stop requested and position is flat. entering PAUSED wait loop (process stays alive).
+4398:[Engine] manual_stop.flag cleared; resuming from PAUSED
+4569:[18:49:36] [SKIP] real entry order failed: side=BUY price=9,850,051 size=0.0010: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+4758:[19:01:43] [WARN] real entry cancel failed; keeping pending orderId=8777527321 context=IMBALANCE_REVERSAL: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5053:[19:25:05] [OK] [REAL-ORDER] SHORT orderId=8777584361 @ 9,854,942 JPY  size=0.0010 BTC  pending=True
+5054:[19:25:43] [OK] real entry cancel accepted: orderId=8777584361 context=IMBALANCE_REVERSAL
+5086:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5087:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5088:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5089:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5090:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5091:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5092:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5093:[19:29:35] [SKIP] trade size calc failed (real account balance unavailable): GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5169:[19:35:10] [WARN] real entry cancel benign but openPositions failed; keeping pending orderId=8777608034 context=IMBALANCE_REVERSAL: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
+5250:[19:42:35] [WARN] real entry cancel failed; keeping pending orderId=8777628760 context=IMBALANCE_REVERSAL: GMO API error status=1 messages=[{'message_code': 'ERR-5008', 'message_string': 'Timestamp for this request is too late.'}]
