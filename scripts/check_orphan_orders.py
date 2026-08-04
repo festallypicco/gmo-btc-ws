@@ -6,6 +6,7 @@ import logging
 import os
 import sqlite3
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
@@ -24,6 +25,9 @@ CONFIG_PATH = ROOT_DIR / "config" / "config.json"
 LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
 RUNTIME_DIR = ROOT_DIR / "runtime"
 HEARTBEATS_PATH = RUNTIME_DIR / "monitor_heartbeats.json"
+# 1回目の orphan 候補を保持し、連続2回で初めてアラートする
+# （発注直後の live_state 未反映レース対策。8/3・8/4 誤検知）
+STATE_PATH = RUNTIME_DIR / "orphan_orders_state.json"
 HEARTBEAT_KEY = "check_orphan_orders"
 ENV_CANDIDATES = (
     ROOT_DIR / ".env",
@@ -166,6 +170,76 @@ def find_orphan_orders(
     return orphans
 
 
+def load_suspect_order_ids(state_path: Path = STATE_PATH) -> Set[int]:
+    """前回チェックで orphan 候補だった orderId 集合を返す。"""
+    if not state_path.exists():
+        return set()
+    try:
+        payload = json.loads(state_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        LOGGER.warning("Failed to read orphan state; treat as empty: %s", exc)
+        return set()
+    if not isinstance(payload, dict):
+        return set()
+    raw_ids = payload.get("suspect_order_ids", [])
+    if not isinstance(raw_ids, list):
+        return set()
+    result: Set[int] = set()
+    for raw in raw_ids:
+        parsed = _parse_optional_order_id(raw)
+        if parsed is not None:
+            result.add(parsed)
+    return result
+
+
+def save_suspect_order_ids(
+    order_ids: Set[int],
+    state_path: Path = STATE_PATH,
+) -> None:
+    """orphan 候補 orderId を atomic write で保存する。"""
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "suspect_order_ids": sorted(order_ids),
+    }
+    tmp_path = state_path.with_name(
+        f"{state_path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
+    )
+    try:
+        tmp_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(tmp_path, state_path)
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+
+def split_orphans_by_consecutive(
+    orphans: List[Dict[str, Any]],
+    previous_suspect_ids: Set[int],
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    orphan を「連続2回目(=アラート対象)」と「初回(=保留)」に分ける。
+    検知条件自体は変えず、発報タイミングだけ遅延させる。
+    """
+    confirmed: List[Dict[str, Any]] = []
+    pending: List[Dict[str, Any]] = []
+    for item in orphans:
+        order_id = _order_id_from_active(item)
+        if order_id is None:
+            continue
+        if order_id in previous_suspect_ids:
+            confirmed.append(item)
+        else:
+            pending.append(item)
+    return confirmed, pending
+
+
 def build_orphan_alert_message(orphans: List[Dict[str, Any]]) -> str:
     lines = [
         "[ALERT] orphan GMO active order(s) detected",
@@ -188,6 +262,7 @@ def check_orphan_orders(
     *,
     config_path: Path = CONFIG_PATH,
     db_path: Path = LIVE_STATE_DB_PATH,
+    state_path: Path = STATE_PATH,
     fetch_fn: Optional[Callable[[], List[Dict[str, Any]]]] = None,
     send_fn: Optional[Callable[[str], bool]] = None,
     ensure_credentials_fn: Optional[Callable[[], None]] = None,
@@ -195,6 +270,9 @@ def check_orphan_orders(
     """
     real mode のみ孤児注文を検査する。
     virtual / 未設定時は API・Telegram を呼ばずスキップする。
+
+    アラートは同一 orderId が連続2回 orphan と判定された場合のみ送る
+    （1回目は状態ファイルへ記録して保留）。
     """
     trading_mode = load_trading_mode(config_path)
     if trading_mode != "real":
@@ -221,6 +299,16 @@ def check_orphan_orders(
         raise RuntimeError("active orders response is not a list")
 
     orphans = find_orphan_orders(active_orders, known_ids)
+    current_orphan_ids: Set[int] = set()
+    for item in orphans:
+        order_id = _order_id_from_active(item)
+        if order_id is not None:
+            current_orphan_ids.add(order_id)
+
+    previous_suspect_ids = load_suspect_order_ids(state_path)
+    # 今回の候補を保存（次回連続判定の入力）。orphan 無しなら空でクリア。
+    save_suspect_order_ids(current_orphan_ids, state_path)
+
     if not orphans:
         LOGGER.info(
             "No orphan orders. active=%d known=%d",
@@ -233,9 +321,41 @@ def check_orphan_orders(
             "orphan_count": 0,
             "active_count": len(active_orders),
             "known_count": len(known_ids),
+            "pending_count": 0,
+            "confirmed_count": 0,
         }
 
-    message = build_orphan_alert_message(orphans)
+    confirmed, pending = split_orphans_by_consecutive(
+        orphans, previous_suspect_ids
+    )
+    if pending:
+        pending_ids = sorted(
+            oid
+            for oid in (
+                _order_id_from_active(item) for item in pending
+            )
+            if oid is not None
+        )
+        LOGGER.info(
+            "orphan candidate(s) pending consecutive confirm "
+            "(no alert yet): count=%d orderIds=%s",
+            len(pending),
+            pending_ids,
+        )
+
+    if not confirmed:
+        _record_monitor_heartbeat()
+        return {
+            "status": "orphan_pending",
+            "orphan_count": len(orphans),
+            "pending_count": len(pending),
+            "confirmed_count": 0,
+            "active_count": len(active_orders),
+            "known_count": len(known_ids),
+            "telegram_sent": False,
+        }
+
+    message = build_orphan_alert_message(confirmed)
     LOGGER.warning(message.replace("\n", " | "))
     sender = send_fn or send_telegram_message
     sent = bool(sender(message))
@@ -245,7 +365,9 @@ def check_orphan_orders(
     _record_monitor_heartbeat()
     return {
         "status": "orphan_detected",
-        "orphan_count": len(orphans),
+        "orphan_count": len(confirmed),
+        "pending_count": len(pending),
+        "confirmed_count": len(confirmed),
         "active_count": len(active_orders),
         "known_count": len(known_ids),
         "telegram_sent": sent,

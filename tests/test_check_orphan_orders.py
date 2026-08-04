@@ -31,16 +31,19 @@ def isolated_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Dict[str,
     config_path = config_dir / "config.json"
     db_path = runtime / "live_state.db"
     heartbeats = runtime / "monitor_heartbeats.json"
+    state_path = runtime / "orphan_orders_state.json"
 
     monkeypatch.setattr(coo, "CONFIG_PATH", config_path)
     monkeypatch.setattr(coo, "LIVE_STATE_DB_PATH", db_path)
     monkeypatch.setattr(coo, "RUNTIME_DIR", runtime)
     monkeypatch.setattr(coo, "HEARTBEATS_PATH", heartbeats)
+    monkeypatch.setattr(coo, "STATE_PATH", state_path)
     return {
         "config": config_path,
         "db": db_path,
         "heartbeats": heartbeats,
         "runtime": runtime,
+        "state": state_path,
     }
 
 
@@ -61,7 +64,7 @@ def _write_live_state(
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
-            CREATE TABLE live_state (
+            CREATE TABLE IF NOT EXISTS live_state (
                 id INTEGER PRIMARY KEY,
                 entry_order_id INTEGER,
                 tp_order_id INTEGER,
@@ -73,6 +76,10 @@ def _write_live_state(
             """
             INSERT INTO live_state (id, entry_order_id, tp_order_id, sl_order_id)
             VALUES (1, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                entry_order_id = excluded.entry_order_id,
+                tp_order_id = excluded.tp_order_id,
+                sl_order_id = excluded.sl_order_id
             """,
             (entry_order_id, tp_order_id, sl_order_id),
         )
@@ -112,7 +119,59 @@ def test_no_orphans_when_all_active_match_known_ids(isolated_paths: Dict[str, Pa
     assert alerts == []
 
 
-def test_orphan_detected_and_telegram_notified(isolated_paths: Dict[str, Path]) -> None:
+def _run_check(
+    isolated_paths: Dict[str, Path],
+    *,
+    fetch_fn: Any,
+    alerts: List[str],
+) -> Dict[str, Any]:
+    return coo.check_orphan_orders(
+        config_path=isolated_paths["config"],
+        db_path=isolated_paths["db"],
+        state_path=isolated_paths["state"],
+        fetch_fn=fetch_fn,
+        send_fn=lambda text: alerts.append(text) or True,
+        ensure_credentials_fn=lambda: None,
+    )
+
+
+def test_orphan_first_sighting_logs_only_no_telegram(
+    isolated_paths: Dict[str, Path],
+) -> None:
+    _write_config(isolated_paths["config"], "real")
+    _write_live_state(
+        isolated_paths["db"],
+        entry_order_id=111,
+        tp_order_id=222,
+        sl_order_id=333,
+    )
+    alerts: List[str] = []
+
+    result = _run_check(
+        isolated_paths,
+        fetch_fn=lambda: [
+            {"orderId": 222, "side": "SELL", "price": "10015000", "size": "0.01"},
+            {
+                "orderId": 9999,
+                "side": "BUY",
+                "price": "9900000",
+                "size": "0.05",
+            },
+        ],
+        alerts=alerts,
+    )
+
+    assert result["status"] == "orphan_pending"
+    assert result["pending_count"] == 1
+    assert result["confirmed_count"] == 0
+    assert alerts == []
+    state = json.loads(isolated_paths["state"].read_text(encoding="utf-8"))
+    assert state["suspect_order_ids"] == [9999]
+
+
+def test_orphan_second_consecutive_sighting_sends_telegram(
+    isolated_paths: Dict[str, Path],
+) -> None:
     _write_config(isolated_paths["config"], "real")
     _write_live_state(
         isolated_paths["db"],
@@ -133,16 +192,14 @@ def test_orphan_detected_and_telegram_notified(isolated_paths: Dict[str, Path]) 
             },
         ]
 
-    result = coo.check_orphan_orders(
-        config_path=isolated_paths["config"],
-        db_path=isolated_paths["db"],
-        fetch_fn=fetch_fn,
-        send_fn=lambda text: alerts.append(text) or True,
-        ensure_credentials_fn=lambda: None,
-    )
+    first = _run_check(isolated_paths, fetch_fn=fetch_fn, alerts=alerts)
+    assert first["status"] == "orphan_pending"
+    assert alerts == []
 
-    assert result["status"] == "orphan_detected"
-    assert result["orphan_count"] == 1
+    second = _run_check(isolated_paths, fetch_fn=fetch_fn, alerts=alerts)
+    assert second["status"] == "orphan_detected"
+    assert second["orphan_count"] == 1
+    assert second["confirmed_count"] == 1
     assert len(alerts) == 1
     assert "9999" in alerts[0]
     assert "BUY" in alerts[0]
@@ -151,7 +208,52 @@ def test_orphan_detected_and_telegram_notified(isolated_paths: Dict[str, Path]) 
     assert "orphan GMO active order" in alerts[0]
 
 
-def test_all_none_known_ids_treats_any_active_as_orphan(
+def test_orphan_race_clears_before_second_check_no_alert(
+    isolated_paths: Dict[str, Path],
+) -> None:
+    """1回目だけ orphan、2回目は known に入った想定（レース解消）。"""
+    _write_config(isolated_paths["config"], "real")
+    _write_live_state(
+        isolated_paths["db"],
+        entry_order_id=None,
+        tp_order_id=None,
+        sl_order_id=None,
+    )
+    alerts: List[str] = []
+
+    first = _run_check(
+        isolated_paths,
+        fetch_fn=lambda: [
+            {"orderId": 555, "side": "SELL", "price": "10000000", "size": "0.02"}
+        ],
+        alerts=alerts,
+    )
+    assert first["status"] == "orphan_pending"
+    assert alerts == []
+
+    # live_state に反映された後の2回目
+    _write_live_state(
+        isolated_paths["db"],
+        entry_order_id=555,
+        tp_order_id=None,
+        sl_order_id=None,
+    )
+
+    second = _run_check(
+        isolated_paths,
+        fetch_fn=lambda: [
+            {"orderId": 555, "side": "SELL", "price": "10000000", "size": "0.02"}
+        ],
+        alerts=alerts,
+    )
+    assert second["status"] == "ok"
+    assert second["orphan_count"] == 0
+    assert alerts == []
+    state = json.loads(isolated_paths["state"].read_text(encoding="utf-8"))
+    assert state["suspect_order_ids"] == []
+
+
+def test_all_none_known_ids_treats_any_active_as_orphan_after_two_checks(
     isolated_paths: Dict[str, Path],
 ) -> None:
     _write_config(isolated_paths["config"], "real")
@@ -163,18 +265,16 @@ def test_all_none_known_ids_treats_any_active_as_orphan(
     )
     alerts: List[str] = []
 
-    result = coo.check_orphan_orders(
-        config_path=isolated_paths["config"],
-        db_path=isolated_paths["db"],
-        fetch_fn=lambda: [
-            {"orderId": 555, "side": "SELL", "price": "10000000", "size": "0.02"}
-        ],
-        send_fn=lambda text: alerts.append(text) or True,
-        ensure_credentials_fn=lambda: None,
-    )
+    fetch_fn = lambda: [  # noqa: E731
+        {"orderId": 555, "side": "SELL", "price": "10000000", "size": "0.02"}
+    ]
+    first = _run_check(isolated_paths, fetch_fn=fetch_fn, alerts=alerts)
+    assert first["status"] == "orphan_pending"
+    assert alerts == []
 
-    assert result["status"] == "orphan_detected"
-    assert result["orphan_count"] == 1
+    second = _run_check(isolated_paths, fetch_fn=fetch_fn, alerts=alerts)
+    assert second["status"] == "orphan_detected"
+    assert second["orphan_count"] == 1
     assert len(alerts) == 1
     assert "555" in alerts[0]
     assert "0.02" in alerts[0]
