@@ -9,4 +9,6 @@ TimeoutStartSec=0
 WorkingDirectory=/opt/gmo-btc-ws
 User=takuya
 Group=takuya
-ExecStart=/usr/bin/docker compose run --rm --profile manual ai_review bash /app/ai_review/run_nightly_review.sh
+# --profile は compose グローバルオプション（run サブコマンドではない）
+# 誤配置だと "unknown flag: --profile" で即失敗する（2026-08-03/04）
+ExecStart=/usr/bin/docker compose --profile manual run --rm ai_review bash /app/ai_review/run_nightly_review.sh
