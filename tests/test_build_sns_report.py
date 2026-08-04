@@ -36,6 +36,15 @@ def _allowed_public() -> Dict[str, object]:
     }
 
 
+def _fake_recent_averages(_target_date: str, **_kwargs: object) -> Dict[str, float]:
+    """比較対象ありとして AI 考察パスを通すためのスタブ。"""
+    return {
+        "trade_count_avg": 70.0,
+        "win_rate_daily_pct_avg": 55.0,
+        "daily_pnl_jpy_avg": 100.0,
+    }
+
+
 def test_sns_text_uses_only_allowed_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     public = _allowed_public()
 
@@ -64,15 +73,17 @@ def test_commentary_failure_falls_back_to_base_text(
     def fake_collect(now=None):
         return "2026-07-22", public
 
-    def boom(_text: str) -> str:
+    def boom(_labels: Dict[str, str]) -> str:
         raise RuntimeError("llm down")
 
     monkeypatch.setattr(sns.bpr, "collect_public_metrics", fake_collect)
+    monkeypatch.setattr(sns.bpr, "compute_recent_averages", _fake_recent_averages)
     target, got_public, full, ok = sns.build_sns_message(commentary_fn=boom)
     assert target == "2026-07-22"
     assert ok is False
     assert set(got_public.keys()) == bpr.ALLOWED_KEYS
-    assert full == bpr.format_report_text("2026-07-22", public)
+    base = bpr.format_report_text("2026-07-22", public)
+    assert full == f"{base}\n\n{sns.THREADS_TEXT_DISCLAIMER}"
 
 
 def test_commentary_success_appends_note(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -82,11 +93,13 @@ def test_commentary_success_appends_note(monkeypatch: pytest.MonkeyPatch) -> Non
         return "2026-07-22", public
 
     monkeypatch.setattr(sns.bpr, "collect_public_metrics", fake_collect)
+    monkeypatch.setattr(sns.bpr, "compute_recent_averages", _fake_recent_averages)
     _t, _p, full, ok = sns.build_sns_message(
-        commentary_fn=lambda _text: "堅調な推移が見られました。"
+        commentary_fn=lambda _labels: "平常通りの決済で、損益は横ばいでした。"
     )
     assert ok is True
-    assert full.endswith("堅調な推移が見られました。")
+    assert "平常通りの決済で、損益は横ばいでした。" in full
+    assert full.endswith(sns.THREADS_TEXT_DISCLAIMER)
     assert "累積損益" in full
 
 
@@ -100,12 +113,100 @@ def test_incomplete_commentary_is_discarded(
         return "2026-07-22", public
 
     monkeypatch.setattr(sns.bpr, "collect_public_metrics", fake_collect)
+    monkeypatch.setattr(sns.bpr, "compute_recent_averages", _fake_recent_averages)
     _t, _p, full, ok = sns.build_sns_message(
-        commentary_fn=lambda _text: "稼働4日目も着実に利益を積み"
+        commentary_fn=lambda _labels: "稼働4日目も着実に利益を積み"
     )
     assert ok is False
-    assert full == bpr.format_report_text("2026-07-22", public)
+    base = bpr.format_report_text("2026-07-22", public)
+    assert full == f"{base}\n\n{sns.THREADS_TEXT_DISCLAIMER}"
     assert "利益を積み" not in full
+
+
+def test_commentary_skipped_when_no_prior_days(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """比較対象となる前日以前が無い場合は AI 考察をスキップする。"""
+    public = _allowed_public()
+    calls: list[Dict[str, str]] = []
+
+    def fake_collect(now=None):
+        return "2026-07-22", public
+
+    def should_not_run(labels: Dict[str, str]) -> str:
+        calls.append(labels)
+        return "呼ばれてはいけない。"
+
+    monkeypatch.setattr(sns.bpr, "collect_public_metrics", fake_collect)
+    monkeypatch.setattr(sns.bpr, "compute_recent_averages", lambda *_a, **_k: None)
+    _t, _p, full, ok = sns.build_sns_message(commentary_fn=should_not_run)
+    assert ok is False
+    assert calls == []
+    base = bpr.format_report_text("2026-07-22", public)
+    assert full == f"{base}\n\n{sns.THREADS_TEXT_DISCLAIMER}"
+
+
+def test_commentary_skipped_when_all_prior_days_zero_settlements(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """直近が全て決済0件で averages=None のときも AI 考察をスキップする。"""
+    public = _allowed_public()
+    calls: list[Dict[str, str]] = []
+
+    def fake_collect(now=None):
+        return "2026-07-22", public
+
+    monkeypatch.setattr(sns.bpr, "collect_public_metrics", fake_collect)
+    # compute_recent_averages が全0件除外後に None を返す経路と同等
+    monkeypatch.setattr(sns.bpr, "compute_recent_averages", lambda *_a, **_k: None)
+    _t, _p, full, ok = sns.build_sns_message(
+        commentary_fn=lambda labels: calls.append(labels) or "呼ばれない。"
+    )
+    assert ok is False
+    assert calls == []
+    base = bpr.format_report_text("2026-07-22", public)
+    assert full == f"{base}\n\n{sns.THREADS_TEXT_DISCLAIMER}"
+
+
+def test_tone_conflict_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    """損益プラスなのにネガティブ語の考察は破棄してフォールバックする。"""
+    public = _allowed_public()
+    assert float(public["daily_pnl_jpy"]) > 0
+
+    def fake_collect(now=None):
+        return "2026-07-22", public
+
+    monkeypatch.setattr(sns.bpr, "collect_public_metrics", fake_collect)
+    monkeypatch.setattr(sns.bpr, "compute_recent_averages", _fake_recent_averages)
+    _t, _p, full, ok = sns.build_sns_message(
+        commentary_fn=lambda _labels: "本日は損失が目立ち、苦戦した一日でした。"
+    )
+    assert ok is False
+    assert "苦戦" not in full
+    base = bpr.format_report_text("2026-07-22", public)
+    assert full == f"{base}\n\n{sns.THREADS_TEXT_DISCLAIMER}"
+
+
+def test_commentary_tone_matches_daily_pnl_rules() -> None:
+    assert sns.commentary_tone_matches_daily_pnl("横ばいの一日でした。", 10.0) is True
+    assert sns.commentary_tone_matches_daily_pnl("苦戦した一日でした。", 10.0) is False
+    assert sns.commentary_tone_matches_daily_pnl("堅調な推移でした。", -10.0) is False
+    assert sns.commentary_tone_matches_daily_pnl("慎重な一日でした。", -10.0) is True
+    # 比較ラベル語彙「改善傾向」「悪化傾向」は損益符号と矛盾しない
+    assert (
+        sns.commentary_tone_matches_daily_pnl(
+            "決済は少なめでしたが、損益も改善傾向が見られました。",
+            -50.0,
+        )
+        is True
+    )
+    assert (
+        sns.commentary_tone_matches_daily_pnl(
+            "決済は多めでしたが、損益は悪化傾向でした。",
+            80.0,
+        )
+        is True
+    )
 
 
 def test_is_complete_commentary_requires_period() -> None:
@@ -277,26 +378,40 @@ def test_build_instagram_caption_omits_commentary_when_missing() -> None:
 
 def test_instagram_caption_fixed_strings_are_constants() -> None:
     """冒頭フック・免責・CTA・ハッシュタグは固定定数であること。"""
-    assert sns.INSTAGRAM_CAPTION_DISCLAIMER.startswith("※現在は仮想資金")
-    assert "シミュレーション運用" in sns.INSTAGRAM_CAPTION_DISCLAIMER
+    assert sns.INSTAGRAM_CAPTION_DISCLAIMER.startswith(
+        "※本アカウントは実資金でAIが自動売買を行った運用実績の記録です。"
+    )
+    assert "投資助言" in sns.INSTAGRAM_CAPTION_DISCLAIMER
     assert "フォローして経過を見てもらえたら嬉しいです。" in sns.INSTAGRAM_CAPTION_CTA
-    assert "#BTC" in sns.INSTAGRAM_CAPTION_HASHTAGS
-    assert "#ビットコイン自動売買" in sns.INSTAGRAM_CAPTION_HASHTAGS
+    tags = [t for t in sns.INSTAGRAM_CAPTION_HASHTAGS.split() if t.startswith("#")]
+    assert tags == [
+        "#BTC",
+        "#AI自動売買",
+        "#仮想通貨",
+        "#トレード記録",
+        "#アルゴリズムトレード",
+    ]
     assert sns.INSTAGRAM_CAPTION_HOOKS[0] == (
         "今日もAIが自分の判断でBTCを売買しました。"
     )
 
 
-def test_threads_text_format_unchanged_by_instagram_caption() -> None:
-    """Instagramキャプション追加後も Threads 用本文フォーマットは従来どおり。"""
+def test_threads_disclaimer_appended_and_not_copied_to_instagram() -> None:
+    """Threads免責は本文末尾に付き、Instagramキャプションへは流用しない。"""
     public = _allowed_public()
-    threads = bpr.format_report_text("2026-07-22", public)
+    base = bpr.format_report_text("2026-07-22", public)
+    threads = sns.compose_sns_message(base, "本日は堅調な結果となりました。")
     assert threads.startswith("BTC自動売買 日次レポート (2026-07-22)")
     assert "累積損益: +88円" in threads
     assert "当日決済件数: 79件" in threads
-    ig = sns.build_instagram_caption("2026-07-22", public)
+    assert threads.endswith(sns.THREADS_TEXT_DISCLAIMER)
+    commentary = sns.extract_threads_commentary(base, threads)
+    assert commentary == "本日は堅調な結果となりました。"
+    ig = sns.build_instagram_caption("2026-07-22", public, commentary)
     assert "BTC自動売買 日次レポート" not in ig
     assert "決済件数：79件" in ig
+    assert sns.THREADS_TEXT_DISCLAIMER not in ig
+    assert sns.INSTAGRAM_CAPTION_DISCLAIMER in ig
 
 
 def test_sample_data_main_skips_live_collect_and_stays_dry_run(

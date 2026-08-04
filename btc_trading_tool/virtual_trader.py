@@ -155,6 +155,8 @@ _FORCE_CLOSE_CONFIRM_RETRY_SEC = 1.0
 # （2026-08-03: ERR-5008 で settle 中断→内部建玉残留を防ぐ）
 _BOARD_TP_SETTLE_MAX_ATTEMPTS = 3
 _BOARD_TP_SETTLE_RETRY_SEC = 1.0
+# 板TP: closeOrder 後の実約定価格取得リトライ（GMO反映遅延の確認用）
+_BOARD_TP_FILL_FETCH_RETRY_SEC = 1.5
 # cancelOrder が「すでに約定/取消済み等」で対象外のときの正常系コード
 _CANCEL_ORDER_BENIGN_CODES = frozenset({"ERR-5122", "ERR-5123"})
 # ---------------------------------------------------------------------- #
@@ -2547,6 +2549,12 @@ class VirtualTrader:
             actual_price, actual_fee = gmo_fetch_order_execution_fill(
                 int(close_oid)
             )
+            # GMO executions 反映遅延の可能性: 初回失敗時のみ 1 回リトライ
+            if actual_price is None or actual_price <= 0:
+                time.sleep(_BOARD_TP_FILL_FETCH_RETRY_SEC)
+                actual_price, actual_fee = gmo_fetch_order_execution_fill(
+                    int(close_oid)
+                )
         if actual_price is not None and actual_price > 0:
             fill_price = float(actual_price)
         else:
@@ -3529,10 +3537,15 @@ def gmo_fetch_order_execution_fill(
     注: GMO API で orderId 指定による約定取得は /v1/executions
     （/v1/latestExecutions ではない）。
     """
+    ts = datetime.now().strftime("%H:%M:%S")
     try:
         data = _gmo_private_get(f"/v1/executions?orderId={int(order_id)}")
         items = data.get("list", [])
         if not isinstance(items, list) or not items:
+            print(
+                f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
+                f" order_id={int(order_id)} reason=empty_list"
+            )
             return None, None
 
         notional = 0.0
@@ -3566,8 +3579,27 @@ def gmo_fetch_order_execution_fill(
 
         avg_price = (notional / size_sum) if price_found and size_sum > 0 else None
         fee = fee_total if fee_found else None
+        if avg_price is None and fee is None:
+            print(
+                f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
+                f" order_id={int(order_id)} reason=price_and_fee_unavailable"
+            )
+        elif avg_price is None:
+            print(
+                f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
+                f" order_id={int(order_id)} reason=price_unavailable"
+            )
+        elif fee is None:
+            print(
+                f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
+                f" order_id={int(order_id)} reason=fee_unavailable"
+            )
         return avg_price, fee
-    except Exception:
+    except Exception as exc:
+        print(
+            f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
+            f" order_id={int(order_id)} reason=exception: {exc}"
+        )
         return None, None
 
 

@@ -486,3 +486,279 @@ def test_main_dry_run_does_not_write_marker(
 
     assert bpr.main(["--dry-run"]) == 0
     assert bpr.already_posted("2026-07-21", runtime_dir=runtime) is False
+
+
+# --------------------------------------------------------------------------- #
+#  Recent averages / comparison labels (SNS commentary 内部入力)               #
+# --------------------------------------------------------------------------- #
+def test_compute_recent_averages_none_when_no_prior_days(tmp_path: Path) -> None:
+    history = tmp_path / "daily_history.jsonl"
+    log_dir = tmp_path / "log"
+    _write_history(
+        history,
+        [{"trading_day": "2026-07-22", "realized_pnl": 100.0}],
+    )
+    assert (
+        bpr.compute_recent_averages(
+            "2026-07-22", history_path=history, log_dir=log_dir
+        )
+        is None
+    )
+
+
+def test_compute_recent_averages_uses_prior_days_up_to_seven(
+    tmp_path: Path,
+) -> None:
+    history = tmp_path / "daily_history.jsonl"
+    log_dir = tmp_path / "log"
+    hist_rows = []
+    for i, day in enumerate(
+        [
+            "2026-07-14",
+            "2026-07-15",
+            "2026-07-16",
+            "2026-07-17",
+            "2026-07-18",
+            "2026-07-19",
+            "2026-07-20",
+            "2026-07-21",
+            "2026-07-22",  # target: 平均対象外
+        ]
+    ):
+        hist_rows.append({"trading_day": day, "realized_pnl": float(100 * (i + 1))})
+        # 各日 2決済 (1勝1敗) -> 勝率50%、件数2
+        _write_csv(
+            log_dir / f"realtime_trading_log_{day}.csv",
+            [
+                {
+                    "timestamp": f"{day} 10:00:00",
+                    "reason": "TAKE_PROFIT",
+                    "pnl": "10",
+                },
+                {
+                    "timestamp": f"{day} 11:00:00",
+                    "reason": "STOP_LOSS",
+                    "pnl": "-5",
+                },
+            ],
+        )
+    _write_history(history, hist_rows)
+
+    avg = bpr.compute_recent_averages(
+        "2026-07-22", history_path=history, log_dir=log_dir, max_days=7
+    )
+    assert avg is not None
+    # 直近7日は 07-15..07-21（07-14は切り捨て）
+    assert avg["trade_count_avg"] == pytest.approx(2.0)
+    assert avg["win_rate_daily_pct_avg"] == pytest.approx(50.0)
+    expected_pnl = sum(100 * i for i in range(2, 9)) / 7.0  # days 15..21 -> i=2..8
+    assert avg["daily_pnl_jpy_avg"] == pytest.approx(expected_pnl)
+
+
+def test_compute_recent_averages_excludes_zero_settlement_days(
+    tmp_path: Path,
+) -> None:
+    """決済0件日は平均から除外し、残日だけで平均する。"""
+    history = tmp_path / "daily_history.jsonl"
+    log_dir = tmp_path / "log"
+    _write_history(
+        history,
+        [
+            {"trading_day": "2026-07-19", "realized_pnl": 100.0},
+            {"trading_day": "2026-07-20", "realized_pnl": 200.0},  # 決済0件
+            {"trading_day": "2026-07-21", "realized_pnl": 300.0},
+            {"trading_day": "2026-07-22", "realized_pnl": 999.0},  # target
+        ],
+    )
+    for day, rows in (
+        (
+            "2026-07-19",
+            [
+                {
+                    "timestamp": "2026-07-19 10:00:00",
+                    "reason": "TAKE_PROFIT",
+                    "pnl": "10",
+                },
+                {
+                    "timestamp": "2026-07-19 11:00:00",
+                    "reason": "STOP_LOSS",
+                    "pnl": "-5",
+                },
+            ],
+        ),
+        ("2026-07-20", []),  # 決済0件
+        (
+            "2026-07-21",
+            [
+                {
+                    "timestamp": "2026-07-21 10:00:00",
+                    "reason": "TAKE_PROFIT",
+                    "pnl": "10",
+                },
+                {
+                    "timestamp": "2026-07-21 11:00:00",
+                    "reason": "TAKE_PROFIT",
+                    "pnl": "10",
+                },
+            ],
+        ),
+    ):
+        _write_csv(log_dir / f"realtime_trading_log_{day}.csv", rows)
+
+    avg = bpr.compute_recent_averages(
+        "2026-07-22", history_path=history, log_dir=log_dir
+    )
+    assert avg is not None
+    # 07-19(2件50%) と 07-21(2件100%) のみ。07-20は除外
+    assert avg["trade_count_avg"] == pytest.approx(2.0)
+    assert avg["win_rate_daily_pct_avg"] == pytest.approx(75.0)
+    assert avg["daily_pnl_jpy_avg"] == pytest.approx(200.0)  # (100+300)/2
+
+
+def test_compute_recent_averages_none_when_all_prior_zero_settlements(
+    tmp_path: Path,
+) -> None:
+    """探索範囲内が全て決済0件なら None（比較対象なし → 呼び出し側で考察スキップ）。"""
+    history = tmp_path / "daily_history.jsonl"
+    log_dir = tmp_path / "log"
+    _write_history(
+        history,
+        [
+            {"trading_day": "2026-07-20", "realized_pnl": 10.0},
+            {"trading_day": "2026-07-21", "realized_pnl": 20.0},
+            {"trading_day": "2026-07-22", "realized_pnl": 30.0},
+        ],
+    )
+    for day in ("2026-07-20", "2026-07-21"):
+        _write_csv(log_dir / f"realtime_trading_log_{day}.csv", [])
+
+    assert (
+        bpr.compute_recent_averages(
+            "2026-07-22", history_path=history, log_dir=log_dir
+        )
+        is None
+    )
+
+
+def test_compare_to_recent_labels_none_when_no_recent() -> None:
+    assert (
+        bpr.compare_to_recent_labels(
+            trade_count=10,
+            win_rate_daily_pct=50.0,
+            daily_pnl_jpy=100.0,
+            recent=None,
+        )
+        is None
+    )
+
+
+def test_compare_to_recent_labels_trade_count_boundaries() -> None:
+    recent = {
+        "trade_count_avg": 100.0,
+        "win_rate_daily_pct_avg": 50.0,
+        "daily_pnl_jpy_avg": 0.0,
+    }
+    # 差29% -> 平常通り
+    labels = bpr.compare_to_recent_labels(
+        trade_count=129,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=0.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["trade_count"] == "平常通り"
+    # 差ちょうど30% -> 多め
+    labels = bpr.compare_to_recent_labels(
+        trade_count=130,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=0.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["trade_count"] == "多め"
+    # 差59% -> 少なめ
+    labels = bpr.compare_to_recent_labels(
+        trade_count=41,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=0.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["trade_count"] == "少なめ"
+    # 差ちょうど60% -> 多い
+    labels = bpr.compare_to_recent_labels(
+        trade_count=160,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=0.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["trade_count"] == "多い"
+    # 差60%以上で少ない
+    labels = bpr.compare_to_recent_labels(
+        trade_count=40,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=0.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["trade_count"] == "少ない"
+
+
+def test_compare_to_recent_labels_win_rate_and_pnl_boundaries() -> None:
+    recent = {
+        "trade_count_avg": 100.0,
+        "win_rate_daily_pct_avg": 50.0,
+        "daily_pnl_jpy_avg": 200.0,
+    }
+    # 勝率: 差9.9pt -> 横ばい / 10pt -> 高め
+    labels = bpr.compare_to_recent_labels(
+        trade_count=100,
+        win_rate_daily_pct=59.9,
+        daily_pnl_jpy=200.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["win_rate_daily"] == "横ばい"
+    labels = bpr.compare_to_recent_labels(
+        trade_count=100,
+        win_rate_daily_pct=60.0,
+        daily_pnl_jpy=200.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["win_rate_daily"] == "高め"
+    labels = bpr.compare_to_recent_labels(
+        trade_count=100,
+        win_rate_daily_pct=40.0,
+        daily_pnl_jpy=200.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["win_rate_daily"] == "低め"
+
+    # 損益: 閾値 = max(200*0.3, 100) = 100。差100以内=横ばい、超過で改善/悪化
+    labels = bpr.compare_to_recent_labels(
+        trade_count=100,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=300.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["daily_pnl"] == "横ばい"
+    labels = bpr.compare_to_recent_labels(
+        trade_count=100,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=301.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["daily_pnl"] == "改善傾向"
+    labels = bpr.compare_to_recent_labels(
+        trade_count=100,
+        win_rate_daily_pct=50.0,
+        daily_pnl_jpy=99.0,
+        recent=recent,
+    )
+    assert labels is not None
+    assert labels["daily_pnl"] == "悪化傾向"

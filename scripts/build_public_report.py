@@ -397,6 +397,128 @@ def assert_only_allowed_keys(public: Dict[str, object]) -> None:
         raise ValueError(f"public report contains disallowed keys: {sorted(extra)}")
 
 
+# --------------------------------------------------------------------------- #
+#  Recent averages / comparison labels (SNS AI commentary 内部入力専用)       #
+#  公開レポート本文・ALLOWED_KEYS には載せない。                               #
+# --------------------------------------------------------------------------- #
+RECENT_AVG_MAX_DAYS = 7
+
+
+def compute_recent_averages(
+    target_date: str,
+    *,
+    history_path: Path = DAILY_HISTORY_PATH,
+    log_dir: Path = LOG_DIR,
+    max_days: int = RECENT_AVG_MAX_DAYS,
+) -> Optional[Dict[str, float]]:
+    """
+    対象取引日より前の取引日について、存在する分だけ（最大 max_days）の平均を返す。
+
+    戻り値キー: trade_count_avg, win_rate_daily_pct_avg, daily_pnl_jpy_avg
+    前日以前が1日も無い場合は None。
+    """
+    rows = _load_history_rows(history_path, target_date=target_date)
+    pnl_by_day: Dict[str, float] = {}
+    for row in rows:
+        day = str(row.get("trading_day") or "").strip()
+        if not day or day >= target_date:
+            continue
+        raw = row.get("realized_pnl")
+        if raw is None:
+            continue
+        try:
+            pnl_by_day[day] = float(raw)
+        except (TypeError, ValueError):
+            continue
+
+    prior_days = sorted(pnl_by_day.keys())
+    if not prior_days:
+        return None
+    if max_days > 0:
+        prior_days = prior_days[-max_days:]
+
+    trade_counts: List[float] = []
+    win_rates: List[float] = []
+    pnls: List[float] = []
+    for day in prior_days:
+        settlements, wins, _entries = count_daily_trades(day, log_dir=log_dir)
+        # 決済0件日は欠損等の異常とみなし、件数・勝率・損益いずれも平均から除外
+        if settlements <= 0:
+            continue
+        trade_counts.append(float(settlements))
+        win_rates.append(wins / settlements * 100.0)
+        pnls.append(pnl_by_day[day])
+
+    if not trade_counts:
+        return None
+
+    n = float(len(trade_counts))
+    return {
+        "trade_count_avg": sum(trade_counts) / n,
+        "win_rate_daily_pct_avg": sum(win_rates) / n,
+        "daily_pnl_jpy_avg": sum(pnls) / n,
+    }
+
+
+def _trade_count_label(today: float, avg: float) -> str:
+    """決済件数ラベル。境界: 30%未満=平常通り / 30%以上60%未満=多め|少なめ / 60%以上=多い|少ない。"""
+    if avg == 0.0:
+        ratio = 0.0 if today == 0.0 else float("inf")
+    else:
+        ratio = abs(today - avg) / abs(avg)
+    if ratio < 0.30:
+        return "平常通り"
+    if ratio < 0.60:
+        return "多め" if today > avg else "少なめ"
+    return "多い" if today > avg else "少ない"
+
+
+def _win_rate_label(today: float, avg: float) -> str:
+    """当日勝率ラベル。差が10ポイント未満=横ばい、以上=高め|低め。"""
+    diff = today - avg
+    if abs(diff) < 10.0:
+        return "横ばい"
+    return "高め" if diff > 0 else "低め"
+
+
+def _daily_pnl_label(today: float, avg: float) -> str:
+    """
+    当日損益ラベル。
+    閾値 = max(|avg|*30%, 100円)。差が閾値以内=横ばい、超過なら改善|悪化傾向。
+    """
+    threshold = max(abs(avg) * 0.30, 100.0)
+    diff = today - avg
+    if abs(diff) <= threshold:
+        return "横ばい"
+    return "改善傾向" if diff > 0 else "悪化傾向"
+
+
+def compare_to_recent_labels(
+    *,
+    trade_count: int,
+    win_rate_daily_pct: float,
+    daily_pnl_jpy: float,
+    recent: Optional[Dict[str, float]],
+) -> Optional[Dict[str, str]]:
+    """
+    当日実績と直近平均を比較し、ラベル dict を返す。
+    recent が None（比較対象なし）のときは None。
+    """
+    if recent is None:
+        return None
+    try:
+        trade_avg = float(recent["trade_count_avg"])
+        win_avg = float(recent["win_rate_daily_pct_avg"])
+        pnl_avg = float(recent["daily_pnl_jpy_avg"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return {
+        "trade_count": _trade_count_label(float(trade_count), trade_avg),
+        "win_rate_daily": _win_rate_label(float(win_rate_daily_pct), win_avg),
+        "daily_pnl": _daily_pnl_label(float(daily_pnl_jpy), pnl_avg),
+    }
+
+
 def _format_jpy_signed(value: float) -> str:
     rounded = int(round(value))
     sign = "+" if rounded >= 0 else "-"

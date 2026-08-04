@@ -3,7 +3,7 @@ SNS投稿用テキスト生成・配信（ステップ1: テキスト + AI考察
 
 - 公開数値は build_public_report.collect_public_metrics() のみを再利用する
   （CSV/DBへ直接アクセスしない）
-- LLM考察は許可リスト済みテキストのみを入力とする
+- LLM考察は直近平均との比較ラベルのみを入力とする（生数値は渡さない）
 - 配信先は TELEGRAM_SNS_*（SNS用Bot）。失敗アラートのみ内部Botへ送る
 """
 from __future__ import annotations
@@ -56,13 +56,13 @@ SAMPLE_PUBLIC_METRICS: Dict[str, object] = {
 
 def build_sample_sns_payload() -> Tuple[str, Dict[str, object], str]:
     """
-    QA用: モック指標から (target_date, public, caption) を返す。
+    QA用: モック指標から (target_date, public, threads_text) を返す。
     実ファイル・本番データには一切アクセスしない。
     """
     public = dict(SAMPLE_PUBLIC_METRICS)
     bpr.assert_only_allowed_keys(public)
-    caption = bpr.format_report_text(SAMPLE_TARGET_DATE, public)
-    return SAMPLE_TARGET_DATE, public, caption
+    base_text = bpr.format_report_text(SAMPLE_TARGET_DATE, public)
+    return SAMPLE_TARGET_DATE, public, compose_sns_message(base_text, None)
 
 
 ENV_CANDIDATES = (
@@ -85,10 +85,16 @@ SNS_COMMENTARY_SYSTEM = """\
 - 「設定を見直した」「パラメータ変更の効果」「ロジックを調整した」など、
   内部の変更・チューニングを示唆したり推測したりする表現
 - 公開されていない内部情報の推測
+- 件数・勝率・損益の生の数値を書くこと
+- 与えられたラベルにない独自の多寡・傾向判断をすること
 
 【許可されること】
-- 与えられた公開数値（損益・勝率・件数・ドローダウン等）に対する一般的な所感・トーンのみ
+- 与えられた比較ラベル（決済件数・当日勝率・当日損益）に基づく一般的な所感のみ
 - 日本語で1〜2文。見出し・箇条書き・絵文字は使わない
+
+【ラベルの扱い（必須）】
+- 与えられたラベルに基づいてのみ多寡・傾向を表現すること。ラベルにない独自の多寡判断をしないこと
+- 毎回同じ書き出し・同じ言い回しを使わず、当日のラベルの組み合わせに応じて表現を変えること
 
 【文体・完結性（必須）】
 - 必ず文法的に完結した文で終えること
@@ -97,10 +103,37 @@ SNS_COMMENTARY_SYSTEM = """\
 - 途中で切れた文や、締めくくりのない文は出力しないこと
 
 【良い出力例】
-- 本日は堅調な結果となりました。
-- 決済件数が多く、活発な一日でした。
-- ドローダウンを抑えつつ、着実に利益を積み上げています。
+- 決済は平常通りで、損益も横ばいの落ち着いた一日でした。
+- 決済が多めに動き、損益も改善傾向が見られました。
+- 決済は少なめでしたが、勝率は高めに推移しました。
+- 決済件数は多く、損益は悪化傾向の慎重な一日でした。
+- 勝率は低めでしたが、損益は横ばいを維持しています。
+- 決済は少なめ、損益は改善傾向で、勝率は横ばいでした。
 """
+
+# 当日損益符号と考察文のトーン整合性チェック用（LLM再呼び出しなし）
+_COMMENTARY_POSITIVE_WORDS: Tuple[str, ...] = (
+    "好調",
+    "堅調",
+    "順調",
+    "利益",
+    "好調さ",
+    "プラス",
+    "上昇",
+    "積み上げ",
+    "伸び",
+)
+_COMMENTARY_NEGATIVE_WORDS: Tuple[str, ...] = (
+    "厳しい",
+    "苦戦",
+    "損失",
+    "低調",
+    "不調",
+    "マイナス",
+    "下落",
+    "失速",
+    "後退",
+)
 
 
 def is_complete_commentary(text: str) -> bool:
@@ -117,6 +150,23 @@ def is_complete_commentary(text: str) -> bool:
     ):
         note = note[1:-1].strip()
     return bool(note) and note.endswith("。")
+
+
+def commentary_tone_matches_daily_pnl(text: str, daily_pnl_jpy: float) -> bool:
+    """
+    考察文のポジティブ/ネガティブ語と当日損益符号が矛盾していないか。
+    矛盾なら False（呼び出し側でフォールバック）。
+    """
+    note = (text or "").strip()
+    if not note:
+        return False
+    has_pos = any(word in note for word in _COMMENTARY_POSITIVE_WORDS)
+    has_neg = any(word in note for word in _COMMENTARY_NEGATIVE_WORDS)
+    if daily_pnl_jpy > 0 and has_neg:
+        return False
+    if daily_pnl_jpy < 0 and has_pos:
+        return False
+    return True
 
 
 def _setup_logging() -> None:
@@ -253,14 +303,14 @@ def _call_openai(
 
 
 def generate_ai_commentary(
-    public_report_text: str,
+    comparison_labels: Dict[str, str],
     *,
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> str:
     """
-    許可リスト済みの公開レポート本文のみを入力に、1〜2文の考察を生成する。
-    失敗時は例外を投げる（呼び出し側でフォールバック）。
+    直近平均との比較ラベルのみを入力に、1〜2文の考察を生成する。
+    生の当日数値・平均値は渡さない。失敗時は例外を投げる。
     """
     resolved_provider = (provider or _env("LLM_PROVIDER", "gemini")).strip().lower()
     resolved_key = (api_key or _env("LLM_API_KEY") or "").strip()
@@ -275,12 +325,17 @@ def generate_ai_commentary(
             "(set LLM_API_KEY or provider-specific key)"
         )
 
+    trade_label = str(comparison_labels.get("trade_count") or "")
+    win_label = str(comparison_labels.get("win_rate_daily") or "")
+    pnl_label = str(comparison_labels.get("daily_pnl") or "")
     user_prompt = (
-        "次の公開日次レポートの数値だけを見て、一般向けの短い所感を1〜2文で書いてください。\n"
-        "数値以外の内部事情は知らなくて構いません。推測しないでください。\n"
+        "次の比較ラベルだけを事実として使い、一般向けの短い所感を1〜2文で書いてください。\n"
+        "ラベルに書かれた多寡・傾向以外の判断や、生の数値の推測はしないでください。\n"
         "必ず文法的に完結した文にし、文末は句点「。」で終えてください。"
         "体言止めや連用形での中断はしないでください。\n\n"
-        f"{public_report_text}"
+        f"決済件数（直近平均との比較）: {trade_label}\n"
+        f"当日勝率（直近平均との比較）: {win_label}\n"
+        f"当日損益（直近平均との比較）: {pnl_label}\n"
     )
     if resolved_provider in {"gemini", "google"}:
         return _call_gemini(user_prompt, SNS_COMMENTARY_SYSTEM, resolved_key)
@@ -289,12 +344,39 @@ def generate_ai_commentary(
     raise RuntimeError(f"unsupported LLM_PROVIDER: {resolved_provider}")
 
 
+# Threads本文用の固定免責（LLM生成禁止）。Instagram側とは別文言。
+THREADS_TEXT_DISCLAIMER = (
+    "※実資金による運用記録です。投資助言ではなく、利益を保証するものではありません。"
+)
+
+
 def compose_sns_message(base_text: str, commentary: Optional[str]) -> str:
-    """基本テキストに考察を追記する。考察が空なら基本テキストのみ。"""
+    """基本テキストに考察を追記し、末尾にThreads用免責を付ける。"""
     note = (commentary or "").strip()
-    if not note:
-        return base_text
-    return f"{base_text}\n\n{note}"
+    if note:
+        body = f"{base_text}\n\n{note}"
+    else:
+        body = base_text
+    return f"{body}\n\n{THREADS_TEXT_DISCLAIMER}"
+
+
+def extract_threads_commentary(base_text: str, threads_text: str) -> Optional[str]:
+    """
+    Threads全文から考察だけを取り出す。末尾のThreads免責は含めない。
+    Instagramへ免責を流用しないための分離処理。
+    """
+    sep = "\n\n"
+    disclaimer_suffix = f"{sep}{THREADS_TEXT_DISCLAIMER}"
+    body = threads_text
+    if body.endswith(disclaimer_suffix):
+        body = body[: -len(disclaimer_suffix)]
+    if not body.startswith(base_text):
+        return None
+    remainder = body[len(base_text) :]
+    if remainder.startswith(sep):
+        remainder = remainder[len(sep) :]
+    note = remainder.strip()
+    return note or None
 
 
 # Instagramキャプション用の固定文言（LLM生成禁止）
@@ -305,16 +387,17 @@ INSTAGRAM_CAPTION_HOOKS: Tuple[str, ...] = (
 )
 INSTAGRAM_CAPTION_HEADING = "【本日の運用実績】"
 INSTAGRAM_CAPTION_DISCLAIMER = (
-    "※現在は仮想資金でのシミュレーション運用段階です。"
-    "実資金での運用ではありません。"
+    "※本アカウントは実資金でAIが自動売買を行った運用実績の記録です。"
+    "投資助言・特定の売買を推奨するものではなく、将来の利益を保証するものでもありません。"
+    "ご覧いただく際は自己判断でお願いします。"
     "売買ロジックの詳細は非公開としています。"
 )
 INSTAGRAM_CAPTION_CTA = (
     "毎日この時間に更新しています。フォローして経過を見てもらえたら嬉しいです。"
 )
+# Instagramハッシュタグ上限5個
 INSTAGRAM_CAPTION_HASHTAGS = (
-    "#BTC #ビットコイン #自動売買 #アルゴリズムトレード #AI自動売買 "
-    "#仮想通貨 #トレード記録 #トレーダーの卵 #ビットコイン自動売買 #投資記録"
+    "#BTC #AI自動売買 #仮想通貨 #トレード記録 #アルゴリズムトレード"
 )
 
 # Telegram配信時の識別用プレフィックス（運用者がプラットフォームを取り違えないため）
@@ -377,20 +460,32 @@ def build_instagram_caption(
 
 
 def _resolve_ai_commentary(
-    base_text: str,
-    commentary_fn: Optional[Callable[[str], str]] = None,
+    comparison_labels: Dict[str, str],
+    *,
+    daily_pnl_jpy: float,
+    commentary_fn: Optional[Callable[[Dict[str, str]], str]] = None,
 ) -> Tuple[Optional[str], bool]:
     """
-    LLM考察を解決する。成功時 (text, True)、失敗/不完全時 (None, False)。
+    LLM考察を解決する。成功時 (text, True)、失敗/不完全/トーン矛盾時 (None, False)。
     Threads / Instagram 双方で同じ結果を再利用するための共通処理。
     """
     try:
         fn = commentary_fn or generate_ai_commentary
-        commentary = fn(base_text)
+        commentary = fn(comparison_labels)
         if not is_complete_commentary(commentary or ""):
             LOGGER.warning(
                 "AI commentary incomplete (must end with '。'); "
                 "posting base text only. raw=%r",
+                (commentary or "")[:200],
+            )
+            return None, False
+        if not commentary_tone_matches_daily_pnl(
+            commentary or "", daily_pnl_jpy
+        ):
+            LOGGER.warning(
+                "AI commentary tone conflicts with daily_pnl_jpy=%s; "
+                "posting base text only. raw=%r",
+                daily_pnl_jpy,
                 (commentary or "")[:200],
             )
             return None, False
@@ -403,7 +498,7 @@ def _resolve_ai_commentary(
 def build_sns_message(
     now: Optional[datetime] = None,
     *,
-    commentary_fn: Optional[Callable[[str], str]] = None,
+    commentary_fn: Optional[Callable[[Dict[str, str]], str]] = None,
 ) -> Tuple[str, Dict[str, object], str, bool]:
     """
     SNS投稿用全文を返す（Threads用）。
@@ -411,9 +506,26 @@ def build_sns_message(
     commentary_ok=False のとき考察なしフォールバック。
     """
     target_date, public, base_text = build_base_sns_text(now=now)
-    commentary, commentary_ok = _resolve_ai_commentary(
-        base_text, commentary_fn=commentary_fn
+    recent = bpr.compute_recent_averages(target_date)
+    labels = bpr.compare_to_recent_labels(
+        trade_count=int(public["trade_count"]),
+        win_rate_daily_pct=float(public["win_rate_daily_pct"]),
+        daily_pnl_jpy=float(public["daily_pnl_jpy"]),
+        recent=recent,
     )
+    if labels is None:
+        LOGGER.info(
+            "AI commentary skipped: no prior trading days for comparison "
+            "(target_date=%s)",
+            target_date,
+        )
+        commentary, commentary_ok = None, False
+    else:
+        commentary, commentary_ok = _resolve_ai_commentary(
+            labels,
+            daily_pnl_jpy=float(public["daily_pnl_jpy"]),
+            commentary_fn=commentary_fn,
+        )
     full_text = compose_sns_message(base_text, commentary)
     return target_date, public, full_text, commentary_ok
 
@@ -619,12 +731,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         else:
             target_date, public, threads_text, commentary_ok = build_sns_message()
             # Threads本文から考察を取り出し、同一考察を Instagram にも載せる
-            # （LLM再呼び出しはしない）
+            # （LLM再呼び出しはしない。Threads免責は Instagram に流用しない）
             base_text = bpr.format_report_text(target_date, public)
-            commentary = None
-            sep = "\n\n"
-            if threads_text.startswith(base_text + sep):
-                commentary = threads_text[len(base_text) + len(sep) :]
+            commentary = extract_threads_commentary(base_text, threads_text)
         bpr.assert_only_allowed_keys(public)
         instagram_caption = build_instagram_caption(
             target_date, public, commentary
