@@ -4,6 +4,8 @@ Instagramリール向け縦型短尺動画の生成（SNSステップ2）。
 - データは build_public_report の許可リスト済み dict のみを使用する
 - 冒頭フックは固定テンプレート（LLM非使用）
 - 背景テンプレート上に動的テキストのみ描画し、ffmpegで無音 mp4 に組み立てる
+- 動画完成後の最終ステップとしてBGMを合成する（映像は再エンコードせずコピー、
+  音声のみ新規エンコード）。BGM読み込み失敗時は無音のままフォールバックする
 """
 from __future__ import annotations
 
@@ -30,6 +32,14 @@ MONO_FONT_PATH = ROOT_DIR / "assets" / "fonts" / "JetBrainsMono-Bold.ttf"
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 FPS = 24
+
+# BGM合成関連
+BGM_PATH = ROOT_DIR / "assets" / "audio" / "sns_bgm_01.mp3"
+BGM_FADE_OUT_SEC = 0.5
+# ラウドネス正規化目標（EBU R128準拠の標準的な値。SNS動画で耳障りにならない水準）
+BGM_LOUDNORM_I = -16.0  # 総合ラウドネス(LUFS)
+BGM_LOUDNORM_TP = -1.5  # トゥルーピーク(dBTP)
+BGM_LOUDNORM_LRA = 11.0  # ラウドネスレンジ(LU)
 
 # Instagram UI に隠れない上下セーフゾーン
 SAFE_TOP = 240
@@ -721,6 +731,84 @@ def encode_frames_to_mp4(
     return output_path
 
 
+def mux_bgm_into_video(
+    video_path: Path,
+    output_path: Path,
+    *,
+    duration_sec: float,
+    bgm_path: Path = BGM_PATH,
+    fade_out_sec: float = BGM_FADE_OUT_SEC,
+    ffmpeg: Optional[str] = None,
+) -> Path:
+    """
+    無音動画に BGM を合成する（最終ステップ専用の独立関数）。
+
+    - 映像ストリームは再エンコードせずコピーする（-c:v copy）
+    - 音声ストリームのみ新規エンコードする（BGMを duration_sec に合わせてループ／
+      トリムし、末尾 fade_out_sec 秒をフェードアウトさせたうえで音量を正規化する）
+    - BGMが動画より短い場合はループで尺を満たし、長い場合はトリムする。
+      -stream_loop -1 と出力側の -t を組み合わせることで、この両ケースを
+      同一のffmpegコマンドで扱う
+    """
+    bgm_path = Path(bgm_path)
+    if not bgm_path.exists():
+        raise FileNotFoundError(f"BGM file not found: {bgm_path}")
+
+    ffmpeg_exe = ffmpeg or _resolve_ffmpeg()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fade_start = max(0.0, duration_sec - fade_out_sec)
+    loudnorm = (
+        f"loudnorm=I={BGM_LOUDNORM_I}:TP={BGM_LOUDNORM_TP}:LRA={BGM_LOUDNORM_LRA}"
+    )
+    afade = f"afade=t=out:st={fade_start:.3f}:d={fade_out_sec:.3f}"
+    filter_complex = f"[1:a]{loudnorm},{afade}[aout]"
+
+    cmd = [
+        ffmpeg_exe,
+        "-y",
+        "-i",
+        str(video_path),
+        "-stream_loop",
+        "-1",
+        "-i",
+        str(bgm_path),
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "0:v",
+        "-map",
+        "[aout]",
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-t",
+        f"{duration_sec:.3f}",
+        "-movflags",
+        "+faststart",
+        str(output_path),
+    ]
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(
+            f"ffmpeg bgm mux failed (exit={proc.returncode}): {detail[-1500:]}"
+        )
+    if not output_path.exists() or output_path.stat().st_size <= 0:
+        raise RuntimeError(f"bgm-muxed mp4 was not created: {output_path}")
+    return output_path
+
+
 def generate_sns_reel_video(
     target_date: str,
     public: Dict[str, object],
@@ -732,10 +820,14 @@ def generate_sns_reel_video(
     work_dir: Optional[Path] = None,
     trading_mode: Optional[str] = None,
     config_path: Path = CONFIG_PATH,
+    enable_bgm: bool = True,
+    bgm_path: Path = BGM_PATH,
 ) -> Path:
     """
-    許可リスト済み public から Instagram リール向け無音 mp4 を生成する。
+    許可リスト済み public から Instagram リール向け mp4 を生成する。
     trading_mode 未指定時は config.json の値を参照する。
+    フレーム作成後の最終ステップとして BGM を合成する（enable_bgm=False で無効化可能）。
+    BGM合成に失敗した場合は警告ログを出したうえで無音のまま出力する。
     """
     bpr.assert_only_allowed_keys(public)
     hook, cards = build_reel_cards(target_date, public)
@@ -808,7 +900,27 @@ def generate_sns_reel_video(
                 fps,
             )
 
-        return encode_frames_to_mp4(work_dir, output_path, fps=fps)
+        # 動画側の生成ロジックはここまで。以降は完成した無音動画に対する
+        # 最終ステップ（BGM合成）のみを行う。
+        silent_path = work_dir / "_silent.mp4"
+        encode_frames_to_mp4(work_dir, silent_path, fps=fps)
+
+        if enable_bgm:
+            try:
+                return mux_bgm_into_video(
+                    silent_path,
+                    output_path,
+                    duration_sec=duration_sec,
+                    bgm_path=bgm_path,
+                )
+            except Exception as exc:
+                LOGGER.warning(
+                    "BGM mux failed; falling back to silent video: %s", exc
+                )
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(silent_path, output_path)
+        return output_path
     finally:
         if cleanup_work:
             shutil.rmtree(work_dir, ignore_errors=True)

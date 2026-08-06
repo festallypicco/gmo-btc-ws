@@ -1,10 +1,13 @@
 """
-SNS投稿用テキスト生成・配信（ステップ1: テキスト + AI考察）。
+SNS投稿用テキスト生成・配信（テキスト + AI考察 + Telegram + Threads/Instagram自動投稿）。
 
 - 公開数値は build_public_report.collect_public_metrics() のみを再利用する
   （CSV/DBへ直接アクセスしない）
 - LLM考察は直近平均との比較ラベルのみを入力とする（生数値は渡さない）
 - 配信先は TELEGRAM_SNS_*（SNS用Bot）。失敗アラートのみ内部Botへ送る
+- Threads テキスト自動投稿・Instagram Reels動画自動投稿は、いずれも
+  Telegram 配信の前段でそれぞれ独立実行し、失敗しても
+  Telegram 配信は従来どおり続行する
 """
 from __future__ import annotations
 
@@ -32,7 +35,9 @@ from telegram_notifier import (  # noqa: E402
 )
 
 import build_public_report as bpr  # noqa: E402
+import instagram_poster as instagram_api  # noqa: E402
 import sns_reel_video as reel  # noqa: E402
+import threads_poster as threads_api  # noqa: E402
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 LOG_DIR = ROOT_DIR / "log"
@@ -571,6 +576,87 @@ def try_generate_reel_video(
         return None, str(exc)
 
 
+def _run_threads_auto_post(
+    target_date: str,
+    threads_text: str,
+    *,
+    dry_run: bool,
+    post_fn: Optional[Callable[..., threads_api.ThreadsPostResult]] = None,
+) -> threads_api.ThreadsPostResult:
+    """
+    Threads API 投稿を試みる。例外は握りつぶして api_error にする
+    （呼び出し側の Telegram 配信を絶対に止めない）。
+    """
+    fn = post_fn or threads_api.post_threads_text
+    try:
+        return fn(threads_text, target_date, dry_run=dry_run)
+    except Exception as exc:
+        LOGGER.exception("Threads auto-post raised unexpectedly: %s", exc)
+        return threads_api.ThreadsPostResult(
+            status="api_error",
+            detail=f"unexpected {type(exc).__name__}: {exc}",
+        )
+
+
+def _annotate_threads_telegram_payload(
+    threads_payload: str,
+    result: threads_api.ThreadsPostResult,
+) -> str:
+    """Telegram 用 Threads 文面に自動投稿結果を追記する。"""
+    if result.posted:
+        url_line = result.post_url or f"post_id={result.post_id}"
+        return (
+            f"{threads_payload}\n\n"
+            f"[Threads自動投稿済み]\n{url_line}"
+        )
+    return threads_payload
+
+
+def _run_instagram_auto_post(
+    video_path: Optional[Path],
+    caption: str,
+    target_date: str,
+    *,
+    dry_run: bool,
+    post_fn: Optional[Callable[..., instagram_api.InstagramPostResult]] = None,
+) -> instagram_api.InstagramPostResult:
+    """
+    Instagram Reels API 投稿を試みる。例外は握りつぶして api_error にする
+    （呼び出し側の Telegram 配信を絶対に止めない）。
+    動画が無い（生成失敗）場合は投稿対象がないため skipped_no_video を返す
+    （こちらは既存の video generation failed アラートで別途通知済みのため、
+    Instagram自動投稿としての失敗扱い・アラートはしない）。
+    """
+    if video_path is None:
+        return instagram_api.InstagramPostResult(
+            status="skipped_no_video",
+            detail="video generation failed; nothing to post",
+        )
+    fn = post_fn or instagram_api.post_instagram_reel
+    try:
+        return fn(video_path, caption, target_date, dry_run=dry_run)
+    except Exception as exc:
+        LOGGER.exception("Instagram auto-post raised unexpectedly: %s", exc)
+        return instagram_api.InstagramPostResult(
+            status="api_error",
+            detail=f"unexpected {type(exc).__name__}: {exc}",
+        )
+
+
+def _annotate_instagram_telegram_payload(
+    ig_payload: str,
+    result: instagram_api.InstagramPostResult,
+) -> str:
+    """Telegram 用 Instagram 文面に自動投稿結果を追記する。"""
+    if result.posted:
+        url_line = result.post_url or f"media_id={result.media_id}"
+        return (
+            f"{ig_payload}\n\n"
+            f"[Instagram自動投稿済み]\n{url_line}"
+        )
+    return ig_payload
+
+
 def deliver_sns_report(
     target_date: str,
     public: Dict[str, object],
@@ -582,19 +668,44 @@ def deliver_sns_report(
     send_video_fn: Optional[Callable[..., bool]] = None,
     send_text_fn: Optional[Callable[..., bool]] = None,
     alert_fn: Optional[Callable[[str], None]] = None,
+    threads_post_fn: Optional[
+        Callable[..., threads_api.ThreadsPostResult]
+    ] = None,
+    instagram_post_fn: Optional[
+        Callable[..., instagram_api.InstagramPostResult]
+    ] = None,
 ) -> int:
     """
     Instagram用: 動画+キャプション配信。失敗時はキャプションをテキスト送信。
     Threads用: テキストを別途配信。
-    戻り値はプロセス終了コード。
+    前段で Threads API / Instagram Graph API 自動投稿をそれぞれ試みる
+    （どちらが失敗しても本関数の Telegram 配信は続行する）。
+
+    終了コード:
+      0: Telegram配信成功 かつ Threads・Instagram自動投稿がいずれも
+         success/dry_run/skipped（または dry-run モード）
+      1: Telegram配信失敗（instagram_ok または threads_ok が False）← 最優先
+      2: Telegram配信成功だが Threads・Instagramのいずれか（または両方）の
+         自動投稿が auth_error / api_error
     """
     alert = alert_fn or _alert_internal
     send_video = send_video_fn or send_sns_telegram_video
     send_text = send_text_fn or send_sns_telegram_message
     out_path = reel_output_path(target_date, dry_run=dry_run)
 
-    ig_payload = label_for_telegram(TELEGRAM_LABEL_INSTAGRAM, instagram_caption)
-    threads_payload = label_for_telegram(TELEGRAM_LABEL_THREADS, threads_text)
+    # ---- Threads API auto-post (independent; must not block Telegram) ----
+    threads_api_result = _run_threads_auto_post(
+        target_date,
+        threads_text,
+        dry_run=dry_run,
+        post_fn=threads_post_fn,
+    )
+    if threads_api_result.is_auth_error or threads_api_result.is_api_error:
+        alert(
+            threads_api.format_failure_alert(
+                threads_api_result, trading_day=target_date
+            )
+        )
 
     video_path, video_err = try_generate_reel_video(
         target_date,
@@ -603,14 +714,97 @@ def deliver_sns_report(
         generate_fn=generate_fn,
     )
 
+    # ---- Instagram Graph API auto-post (independent; must not block Telegram) ----
+    instagram_api_result = _run_instagram_auto_post(
+        video_path,
+        instagram_caption,
+        target_date,
+        dry_run=dry_run,
+        post_fn=instagram_post_fn,
+    )
+    if (
+        instagram_api_result.is_auth_error
+        or instagram_api_result.is_api_error
+        or instagram_api_result.is_file_error
+    ):
+        alert(
+            instagram_api.format_failure_alert(
+                instagram_api_result, trading_day=target_date
+            )
+        )
+
+    ig_payload = label_for_telegram(TELEGRAM_LABEL_INSTAGRAM, instagram_caption)
+    ig_payload = _annotate_instagram_telegram_payload(
+        ig_payload, instagram_api_result
+    )
+    threads_payload = label_for_telegram(TELEGRAM_LABEL_THREADS, threads_text)
+    threads_payload = _annotate_threads_telegram_payload(
+        threads_payload, threads_api_result
+    )
+
     if dry_run:
+        # Threads/Instagram dry-run 確認を Telegram SNS Bot へ送る（本番キャプション配信はしない）
+        try:
+            if threads_api_result.status == "dry_run":
+                confirm = threads_api.format_dry_run_telegram_message(
+                    threads_api_result, trading_day=target_date
+                )
+            elif threads_api_result.status == "skipped_already_posted":
+                confirm = (
+                    "[Threads自動投稿 DRY-RUN]\n"
+                    f"trading_day={target_date}\n"
+                    "既に threads_posted flag があるため投稿スキップ "
+                    f"(detail={threads_api_result.detail})"
+                )
+            else:
+                confirm = (
+                    "[Threads自動投稿 DRY-RUN]\n"
+                    f"trading_day={target_date}\n"
+                    f"status={threads_api_result.status}\n"
+                    f"detail={threads_api_result.detail}"
+                )
+            send_text(confirm)
+        except Exception as exc:
+            LOGGER.warning("Threads dry-run Telegram confirm failed: %s", exc)
+        try:
+            if instagram_api_result.status == "dry_run":
+                ig_confirm = instagram_api.format_dry_run_telegram_message(
+                    instagram_api_result, trading_day=target_date
+                )
+            elif instagram_api_result.status == "skipped_already_posted":
+                ig_confirm = (
+                    "[Instagram Reels自動投稿 DRY-RUN]\n"
+                    f"trading_day={target_date}\n"
+                    "既に instagram_posted flag があるため投稿スキップ "
+                    f"(detail={instagram_api_result.detail})"
+                )
+            elif instagram_api_result.status == "skipped_no_video":
+                ig_confirm = (
+                    "[Instagram Reels自動投稿 DRY-RUN]\n"
+                    f"trading_day={target_date}\n"
+                    f"動画が生成できていないため投稿対象なし "
+                    f"(detail={instagram_api_result.detail})"
+                )
+            else:
+                ig_confirm = (
+                    "[Instagram Reels自動投稿 DRY-RUN]\n"
+                    f"trading_day={target_date}\n"
+                    f"status={instagram_api_result.status}\n"
+                    f"detail={instagram_api_result.detail}"
+                )
+            send_text(ig_confirm)
+        except Exception as exc:
+            LOGGER.warning("Instagram dry-run Telegram confirm failed: %s", exc)
         if video_path is not None:
             LOGGER.info(
                 "DRY-RUN mode. Captions and video prepared.\n"
                 "video_path=%s\n"
+                "threads_api_status=%s instagram_api_status=%s\n"
                 "--- Instagram caption ---\n%s\n"
                 "--- Threads text ---\n%s",
                 video_path,
+                threads_api_result.status,
+                instagram_api_result.status,
                 instagram_caption,
                 threads_text,
             )
@@ -619,9 +813,12 @@ def deliver_sns_report(
             "DRY-RUN mode. Video failed; Instagram caption-only fallback "
             "would be used for the reel side.\n"
             "video_error=%s\n"
+            "threads_api_status=%s instagram_api_status=%s\n"
             "--- Instagram caption ---\n%s\n"
             "--- Threads text ---\n%s",
             video_err,
+            threads_api_result.status,
+            instagram_api_result.status,
             instagram_caption,
             threads_text,
         )
@@ -670,8 +867,10 @@ def deliver_sns_report(
     threads_ok = bool(send_text(threads_payload))
     if threads_ok:
         LOGGER.info(
-            "SNS Threads text send succeeded for trading_day=%s",
+            "SNS Threads text send succeeded for trading_day=%s "
+            "(threads_api_status=%s)",
             target_date,
+            threads_api_result.status,
         )
     else:
         LOGGER.error("SNS Threads text send failed")
@@ -680,20 +879,40 @@ def deliver_sns_report(
             f"trading_day={target_date}"
         )
 
-    if instagram_ok and threads_ok:
-        return 0
+    if not (instagram_ok and threads_ok):
+        LOGGER.error(
+            "SNS delivery incomplete (instagram_ok=%s threads_ok=%s)",
+            instagram_ok,
+            threads_ok,
+        )
+        alert(
+            "[ALERT] SNS report delivery failed (video and text)\n"
+            f"trading_day={target_date}\n"
+            f"instagram_ok={instagram_ok} threads_ok={threads_ok}"
+        )
+        return 1
 
-    LOGGER.error(
-        "SNS delivery incomplete (instagram_ok=%s threads_ok=%s)",
-        instagram_ok,
-        threads_ok,
+    threads_auto_post_failed = (
+        threads_api_result.is_auth_error or threads_api_result.is_api_error
     )
-    alert(
-        "[ALERT] SNS report delivery failed (video and text)\n"
-        f"trading_day={target_date}\n"
-        f"instagram_ok={instagram_ok} threads_ok={threads_ok}"
+    instagram_auto_post_failed = (
+        instagram_api_result.is_auth_error
+        or instagram_api_result.is_api_error
+        or instagram_api_result.is_file_error
     )
-    return 1
+    if threads_auto_post_failed or instagram_auto_post_failed:
+        LOGGER.error(
+            "SNS Telegram delivery ok but SNS auto-post failed "
+            "(threads_status=%s threads_detail=%s "
+            "instagram_status=%s instagram_detail=%s)",
+            threads_api_result.status,
+            threads_api_result.detail,
+            instagram_api_result.status,
+            instagram_api_result.detail,
+        )
+        return 2
+
+    return 0
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -703,7 +922,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="build caption and reel mp4 without sending to Telegram",
+        help=(
+            "build caption and reel mp4 without production Telegram delivery; "
+            "Threads API / Instagram Graph API are not called "
+            "(request preview logged + Telegram confirm)"
+        ),
     )
     parser.add_argument(
         "--sample-data",
