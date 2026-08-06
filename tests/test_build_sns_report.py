@@ -452,4 +452,12 @@ def test_sample_data_main_skips_live_collect_and_stays_dry_run(
 
     assert sns.main(["--sample-data"]) == 0
     assert calls == []
-    assert sent == []  # dry-run: no Telegram send
+    # dry-run: 本番の Instagram/Threads キャプション配信はせず、
+    # Threads API / Instagram Graph API それぞれの dry-run 確認メッセージのみ
+    # Telegram へ送る
+    assert len(sent) == 2
+    assert all(item[0] == "text" for item in sent)
+    assert all("DRY-RUN" in item[1][0] for item in sent)
+    assert all("[Threads用テキスト]" not in item[1][0] for item in sent)
+    assert any("Threads" in item[1][0] for item in sent)
+    assert any("Instagram" in item[1][0] for item in sent)

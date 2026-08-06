@@ -6,9 +6,12 @@ Instagramリール動画生成の許可リスト境界・固定フック・フ�
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import pytest
 
@@ -19,6 +22,7 @@ if str(_SCRIPTS) not in sys.path:
 
 import build_public_report as bpr  # noqa: E402
 import build_sns_report as sns  # noqa: E402
+import instagram_poster as instagram_api  # noqa: E402
 import sns_reel_video as reel  # noqa: E402
 
 
@@ -34,6 +38,91 @@ def _allowed_public() -> Dict[str, object]:
         "entry_count": 175,
         "max_drawdown_pct": 0.15,
     }
+
+
+@dataclass
+class _StreamInfo:
+    duration_sec: Optional[float]
+    has_audio: bool
+
+
+def _probe_stream_info(path: Path) -> _StreamInfo:
+    """
+    ffprobeに依存せず、ffmpeg自身の `-i` 出力(stderr)から長さ・音声有無を読み取る
+    （imageio-ffmpegはffmpeg本体のみ同梱しffprobeは含まないため）。
+    """
+    ffmpeg = reel._resolve_ffmpeg()
+    proc = subprocess.run(
+        [ffmpeg, "-hide_banner", "-i", str(path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    stderr = proc.stderr or ""
+    has_audio = "Audio:" in stderr
+    match = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.\d+)", stderr)
+    duration_sec = None
+    if match:
+        h, m, s = match.groups()
+        duration_sec = int(h) * 3600 + int(m) * 60 + float(s)
+    return _StreamInfo(duration_sec=duration_sec, has_audio=has_audio)
+
+
+def _make_silent_video(path: Path, duration_sec: float, fps: int = 8) -> Path:
+    """テスト用の無音動画（単色）をlavfiで生成する。"""
+    ffmpeg = reel._resolve_ffmpeg()
+    proc = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"color=c=black:s=64x64:d={duration_sec}:r={fps}",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"failed to create test silent video: {proc.stderr}")
+    return path
+
+
+def _make_sine_bgm(path: Path, duration_sec: float) -> Path:
+    """テスト用の合成BGM（サイン波・wav）をlavfiで生成する。"""
+    ffmpeg = reel._resolve_ffmpeg()
+    proc = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency=440:duration={duration_sec}",
+            "-c:a",
+            "pcm_s16le",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"failed to create test bgm: {proc.stderr}")
+    return path
 
 
 def _header_strip(img) -> bytes:
@@ -244,6 +333,9 @@ def test_video_failure_falls_back_to_text_and_alerts_internal() -> None:
         send_video_fn=lambda *a, **k: videos.append((a, k)) or True,
         send_text_fn=lambda text: texts.append(text) or True,
         alert_fn=lambda msg: alerts.append(msg),
+        instagram_post_fn=lambda *a, **k: instagram_api.InstagramPostResult(
+            status="skipped_no_video", detail="video generation failed"
+        ),
     )
     assert code == 0
     assert videos == []
@@ -280,6 +372,9 @@ def test_video_success_sends_instagram_video_and_threads_text() -> None:
         or True,
         send_text_fn=lambda text: texts.append(text) or True,
         alert_fn=lambda msg: alerts.append(msg),
+        instagram_post_fn=lambda *a, **k: instagram_api.InstagramPostResult(
+            status="success", media_id="ig123", post_url="https://instagram.com/reel/ig123"
+        ),
     )
     assert code == 0
     assert len(videos) == 1
@@ -292,7 +387,12 @@ def test_video_success_sends_instagram_video_and_threads_text() -> None:
 
 
 def test_generate_reel_video_smoke(tmp_path: Path) -> None:
-    """実ffmpegで短い検証用動画を生成できること（環境依存）。"""
+    """実ffmpegで短い検証用動画を生成できること（環境依存）。
+
+    BGM合成のffmpegフィルタ対応状況に依存せず既存挙動を維持するため、
+    ここでは enable_bgm=False で従来通り無音動画のみを検証する。
+    BGM合成自体のテストは別ケース（test_generate_reel_video_with_bgm_smoke 等）で行う。
+    """
     public = _allowed_public()
     out = tmp_path / "reel.mp4"
     original = (
@@ -317,6 +417,7 @@ def test_generate_reel_video_smoke(tmp_path: Path) -> None:
             fps=8,
             work_dir=tmp_path / "frames",
             trading_mode="real",
+            enable_bgm=False,
         )
     finally:
         (
@@ -329,3 +430,133 @@ def test_generate_reel_video_smoke(tmp_path: Path) -> None:
         ) = original
     assert path.exists()
     assert path.stat().st_size > 1000
+    assert _probe_stream_info(path).has_audio is False
+
+
+def test_mux_bgm_loops_short_bgm_to_fill_duration(tmp_path: Path) -> None:
+    """BGMが動画より短い場合、ループして尺いっぱいまで音声を満たすこと。"""
+    target_duration = 5.0
+    video = _make_silent_video(tmp_path / "silent.mp4", duration_sec=target_duration)
+    bgm = _make_sine_bgm(tmp_path / "short_bgm.wav", duration_sec=2.0)
+    out = tmp_path / "out.mp4"
+
+    result = reel.mux_bgm_into_video(
+        video, out, duration_sec=target_duration, bgm_path=bgm
+    )
+
+    assert result == out
+    assert out.exists() and out.stat().st_size > 0
+    info = _probe_stream_info(out)
+    assert info.has_audio is True
+    assert info.duration_sec is not None
+    assert abs(info.duration_sec - target_duration) < 0.3
+
+
+def test_mux_bgm_trims_long_bgm_to_duration(tmp_path: Path) -> None:
+    """BGMが動画より長い場合、動画の尺にトリムされること。"""
+    target_duration = 4.0
+    video = _make_silent_video(tmp_path / "silent.mp4", duration_sec=target_duration)
+    bgm = _make_sine_bgm(tmp_path / "long_bgm.wav", duration_sec=10.0)
+    out = tmp_path / "out.mp4"
+
+    reel.mux_bgm_into_video(video, out, duration_sec=target_duration, bgm_path=bgm)
+
+    info = _probe_stream_info(out)
+    assert info.has_audio is True
+    assert info.duration_sec is not None
+    assert abs(info.duration_sec - target_duration) < 0.3
+
+
+def test_mux_bgm_raises_for_missing_file(tmp_path: Path) -> None:
+    """BGMファイルが存在しない場合はFileNotFoundErrorを送出する。"""
+    video = _make_silent_video(tmp_path / "silent.mp4", duration_sec=2.0)
+    with pytest.raises(FileNotFoundError):
+        reel.mux_bgm_into_video(
+            video,
+            tmp_path / "out.mp4",
+            duration_sec=2.0,
+            bgm_path=tmp_path / "does_not_exist.mp3",
+        )
+
+
+def _generate_reel_with_tiny_durations(
+    tmp_path: Path,
+    *,
+    enable_bgm: bool,
+    bgm_path: Optional[Path] = None,
+) -> Path:
+    """スモークテスト用に極短尺設定でリール動画を生成する共通ヘルパー。"""
+    public = _allowed_public()
+    out = tmp_path / "reel.mp4"
+    original = (
+        reel.HOOK_DURATION_SEC,
+        reel.CARD_DURATION_SEC,
+        reel.TEXT_FADE_SEC,
+        reel.COUNTUP_SEC,
+        reel.ROW_STAGGER_SEC,
+        reel.HOOK_LINE_STAGGER_SEC,
+    )
+    kwargs = dict(
+        fps=8,
+        work_dir=tmp_path / "frames",
+        trading_mode="real",
+        enable_bgm=enable_bgm,
+    )
+    if bgm_path is not None:
+        kwargs["bgm_path"] = bgm_path
+    try:
+        reel.HOOK_DURATION_SEC = 0.4
+        reel.CARD_DURATION_SEC = 0.6
+        reel.TEXT_FADE_SEC = 0.1
+        reel.COUNTUP_SEC = 0.2
+        reel.ROW_STAGGER_SEC = 0.05
+        reel.HOOK_LINE_STAGGER_SEC = 0.04
+        return reel.generate_sns_reel_video("2026-07-22", public, out, **kwargs)
+    finally:
+        (
+            reel.HOOK_DURATION_SEC,
+            reel.CARD_DURATION_SEC,
+            reel.TEXT_FADE_SEC,
+            reel.COUNTUP_SEC,
+            reel.ROW_STAGGER_SEC,
+            reel.HOOK_LINE_STAGGER_SEC,
+        ) = original
+
+
+def test_generate_reel_video_with_bgm_smoke(tmp_path: Path) -> None:
+    """実ffmpeg・実BGMファイルで、動画に音声トラックが合成されること（環境依存）。"""
+    path = _generate_reel_with_tiny_durations(tmp_path, enable_bgm=True)
+    assert path.exists()
+    assert path.stat().st_size > 1000
+    info = _probe_stream_info(path)
+    assert info.has_audio is True
+
+
+def test_generate_reel_video_bgm_missing_falls_back_to_silent(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BGMファイルが存在しない場合、警告ログを出したうえで無音動画を出力すること。"""
+    with caplog.at_level("WARNING", logger="sns_reel"):
+        path = _generate_reel_with_tiny_durations(
+            tmp_path, enable_bgm=True, bgm_path=tmp_path / "no_such_bgm.mp3"
+        )
+    assert path.exists()
+    assert path.stat().st_size > 1000
+    assert _probe_stream_info(path).has_audio is False
+    assert any("BGM mux failed" in rec.message for rec in caplog.records)
+
+
+def test_generate_reel_video_bgm_corrupt_file_falls_back_to_silent(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BGMファイルの読み込みに失敗する場合も、処理全体は失敗させず無音出力にフォールバックすること。"""
+    bad_bgm = tmp_path / "bad_bgm.mp3"
+    bad_bgm.write_bytes(b"this is not a valid audio file")
+    with caplog.at_level("WARNING", logger="sns_reel"):
+        path = _generate_reel_with_tiny_durations(
+            tmp_path, enable_bgm=True, bgm_path=bad_bgm
+        )
+    assert path.exists()
+    assert path.stat().st_size > 1000
+    assert _probe_stream_info(path).has_audio is False
+    assert any("BGM mux failed" in rec.message for rec in caplog.records)
