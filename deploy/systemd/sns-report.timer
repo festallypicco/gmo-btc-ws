@@ -1,8 +1,8 @@
 [Unit]
-Description=Run BTC trading SNS report daily at 06:15
+Description=Run BTC trading SNS report daily at 07:35
 
 [Timer]
-OnCalendar=*-*-* 06:15:00
+OnCalendar=*-*-* 07:35:00
 Persistent=true
 
 [Install]

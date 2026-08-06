@@ -1,8 +1,8 @@
 [Unit]
-Description=Run BTC trading public daily report daily at 06:10
+Description=Run BTC trading public daily report daily at 07:30
 
 [Timer]
-OnCalendar=*-*-* 06:10:00
+OnCalendar=*-*-* 07:30:00
 Persistent=true
 
 [Install]
