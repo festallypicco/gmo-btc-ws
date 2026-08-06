@@ -35,8 +35,11 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 RUNTIME_DIR = ROOT_DIR / "runtime"
 PUBLIC_MEDIA_DIR = RUNTIME_DIR / "public_media"
 
-# Instagram Graph API
-INSTAGRAM_API_BASE = "https://graph.facebook.com/v19.0"
+# Instagram API with Instagram Login（Business Login for Instagram経由、IGAAトークン）。
+# graph.facebook.com はFacebookログイン経由のEAAトークン専用のため使用しない。
+# 公式ドキュメント（Content Publishing）のサンプルもバージョン付きパスを使用しているため、
+# graph.instagram.com にもバージョンを付与する（2026-08時点の最新は v26.0）。
+INSTAGRAM_API_BASE = "https://graph.instagram.com/v26.0"
 HTTP_TIMEOUT_SEC = 30
 
 # コンテナ処理完了待ちポーリング（5秒間隔 x 最大60回 = 約5分）
