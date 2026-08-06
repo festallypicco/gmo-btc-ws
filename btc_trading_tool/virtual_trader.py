@@ -157,8 +157,21 @@ _BOARD_TP_SETTLE_MAX_ATTEMPTS = 3
 _BOARD_TP_SETTLE_RETRY_SEC = 1.0
 # 板TP: closeOrder 後の実約定価格取得リトライ（GMO反映遅延の確認用）
 _BOARD_TP_FILL_FETCH_RETRY_SEC = 1.5
+# 板TP: 実約定価格取得の連続失敗がこの回数の倍数に達したら CRITICAL アラート
+_BOARD_TP_FILL_FETCH_FAIL_ALERT_EVERY = 3
 # cancelOrder が「すでに約定/取消済み等」で対象外のときの正常系コード
 _CANCEL_ORDER_BENIGN_CODES = frozenset({"ERR-5122", "ERR-5123"})
+# gmo_fetch_order_execution_fill の失敗理由（ログ / アラート用）
+_FILL_FETCH_REASON_EMPTY = "empty_list"
+_FILL_FETCH_REASON_PRICE = "price_unavailable"
+_FILL_FETCH_REASON_FEE = "fee_unavailable"
+_FILL_FETCH_REASON_PRICE_AND_FEE = "price_and_fee_unavailable"
+_FILL_FETCH_REASON_LABELS = {
+    _FILL_FETCH_REASON_EMPTY: "空レスポンス",
+    _FILL_FETCH_REASON_PRICE: "価格欠損",
+    _FILL_FETCH_REASON_FEE: "手数料欠損",
+    _FILL_FETCH_REASON_PRICE_AND_FEE: "価格欠損",
+}
 # ---------------------------------------------------------------------- #
 
 
@@ -295,6 +308,9 @@ class VirtualTrader:
         self._imbalance_reversal_since: Optional[float] = None
         # 直近 imbalance CANCEL の時刻（方向不問クールダウン用）。永続化しない。
         self._last_imbalance_cancel_any_side_ts: Optional[float] = None
+        # 板TP経路のみ: 実約定価格取得の連続失敗回数（他決済経路では触らない）。永続化しない。
+        self._board_tp_fill_fetch_fail_streak: int = 0
+        self._board_tp_fill_fetch_last_fail_reason: str = ""
 
         # KPI カウンタ（trade_history の maxlen 制限を受けない全履歴集計）
         self._win_count:       int   = 0
@@ -373,6 +389,48 @@ class VirtualTrader:
             self._safe_console_print(
                 f"[WARN] critical alert notify failed: {alert_exc}"
             )
+
+    @staticmethod
+    def _board_tp_fill_fetch_reason_label(reason: str) -> str:
+        """板TPアラート用: fetch失敗理由コードを日本語ラベルへ。"""
+        raw = str(reason or "").strip()
+        if not raw:
+            return "不明"
+        if raw.startswith("exception"):
+            return "例外"
+        return _FILL_FETCH_REASON_LABELS.get(raw, raw)
+
+    def _note_board_tp_fill_fetch_success_unlocked(self) -> None:
+        """板TPの実約定価格取得成功: 連続失敗カウンタをリセット。"""
+        self._board_tp_fill_fetch_fail_streak = 0
+        self._board_tp_fill_fetch_last_fail_reason = ""
+
+    def _note_board_tp_fill_fetch_failure_unlocked(
+        self,
+        *,
+        reason: str,
+        close_oid: Any,
+    ) -> None:
+        """
+        板TPの実約定価格取得失敗（理論値フォールバック）を記録する。
+        連続失敗が 3 の倍数に達した時点で CRITICAL アラートを送る。
+        """
+        self._board_tp_fill_fetch_fail_streak += 1
+        self._board_tp_fill_fetch_last_fail_reason = str(reason or "unknown")
+        streak = self._board_tp_fill_fetch_fail_streak
+        if streak % _BOARD_TP_FILL_FETCH_FAIL_ALERT_EVERY != 0:
+            return
+        label = self._board_tp_fill_fetch_reason_label(
+            self._board_tp_fill_fetch_last_fail_reason
+        )
+        self._emit_critical_alert(
+            "[CRITICAL] REAL MODE BOARD TP FILL FETCH FAILED\n"
+            "detail=actual fill price unavailable; using theoretical fallback\n"
+            f"consecutive_failures={streak}\n"
+            f"reason={label}"
+            f" ({self._board_tp_fill_fetch_last_fail_reason})\n"
+            f"close_order_id={close_oid}"
+        )
 
     def _apply_exit_execution_unlocked(self, evt: Dict[str, Any]) -> bool:
         """
@@ -2545,23 +2603,41 @@ class VirtualTrader:
         target_fill_price = fill_price
         actual_price: Optional[float] = None
         actual_fee: Optional[int] = None
+        fetch_reason: Optional[str] = None
         if close_oid is not None:
-            actual_price, actual_fee = gmo_fetch_order_execution_fill(
-                int(close_oid)
-            )
+            fill_result = gmo_fetch_order_execution_fill(int(close_oid))
+            actual_price = fill_result[0]
+            actual_fee = fill_result[1]
+            fetch_reason = fill_result[2] if len(fill_result) > 2 else None
             # GMO executions 反映遅延の可能性: 初回失敗時のみ 1 回リトライ
             if actual_price is None or actual_price <= 0:
                 time.sleep(_BOARD_TP_FILL_FETCH_RETRY_SEC)
-                actual_price, actual_fee = gmo_fetch_order_execution_fill(
-                    int(close_oid)
-                )
+                fill_result = gmo_fetch_order_execution_fill(int(close_oid))
+                actual_price = fill_result[0]
+                actual_fee = fill_result[1]
+                fetch_reason = fill_result[2] if len(fill_result) > 2 else None
         if actual_price is not None and actual_price > 0:
             fill_price = float(actual_price)
+            # close_oid 経由で取得できた場合のみ成功扱い（カウンタリセット）
+            if close_oid is not None:
+                self._note_board_tp_fill_fetch_success_unlocked()
         else:
-            self._safe_console_print(
-                f"[{ts}] [WARN] [REAL-TP] actual fill price unavailable;"
-                f" using target price={target_fill_price:,.0f} JPY"
-            )
+            if close_oid is not None:
+                reason = fetch_reason or "unknown"
+                self._safe_console_print(
+                    f"[{ts}] [WARN] [REAL-TP] actual fill price unavailable;"
+                    f" using target price={target_fill_price:,.0f} JPY"
+                    f" reason={reason}"
+                )
+                self._note_board_tp_fill_fetch_failure_unlocked(
+                    reason=reason,
+                    close_oid=close_oid,
+                )
+            else:
+                self._safe_console_print(
+                    f"[{ts}] [WARN] [REAL-TP] actual fill price unavailable;"
+                    f" using target price={target_fill_price:,.0f} JPY"
+                )
         self._settle_real_exit_from_execution_unlocked(
             fill_price=fill_price,
             fill_size=size,
@@ -3527,12 +3603,15 @@ def gmo_close_order(
 
 def gmo_fetch_order_execution_fill(
     order_id: int,
-) -> tuple[Optional[float], Optional[int]]:
+) -> tuple[Optional[float], Optional[int], Optional[str]]:
     """
     GET /v1/executions?orderId=... から数量加重平均約定価格と手数料合計を返す。
 
-    戻り値: (avg_price, total_fee)。価格または手数料が取れない場合、
-    対応する要素は None（呼び出し側は目標値/理論手数料へフォールバック）。
+    戻り値: (avg_price, total_fee, fail_reason)。
+    価格が取れない場合 avg_price は None、fail_reason に原因コードを入れる
+    （empty_list / price_unavailable / price_and_fee_unavailable /
+     exception:...）。価格が取れた場合 fail_reason は None
+    （fee のみ欠損時も価格は使えるため fail_reason=None、fee は None）。
 
     注: GMO API で orderId 指定による約定取得は /v1/executions
     （/v1/latestExecutions ではない）。
@@ -3544,9 +3623,9 @@ def gmo_fetch_order_execution_fill(
         if not isinstance(items, list) or not items:
             print(
                 f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
-                f" order_id={int(order_id)} reason=empty_list"
+                f" order_id={int(order_id)} reason={_FILL_FETCH_REASON_EMPTY}"
             )
-            return None, None
+            return None, None, _FILL_FETCH_REASON_EMPTY
 
         notional = 0.0
         size_sum = 0.0
@@ -3580,27 +3659,34 @@ def gmo_fetch_order_execution_fill(
         avg_price = (notional / size_sum) if price_found and size_sum > 0 else None
         fee = fee_total if fee_found else None
         if avg_price is None and fee is None:
+            reason = _FILL_FETCH_REASON_PRICE_AND_FEE
             print(
                 f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
-                f" order_id={int(order_id)} reason=price_and_fee_unavailable"
+                f" order_id={int(order_id)} reason={reason}"
             )
-        elif avg_price is None:
+            return None, None, reason
+        if avg_price is None:
+            reason = _FILL_FETCH_REASON_PRICE
             print(
                 f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
-                f" order_id={int(order_id)} reason=price_unavailable"
+                f" order_id={int(order_id)} reason={reason}"
             )
-        elif fee is None:
+            return None, fee, reason
+        if fee is None:
+            # 価格は取れたので呼び出し側は実価格を使える。ログのみ残す。
             print(
                 f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
-                f" order_id={int(order_id)} reason=fee_unavailable"
+                f" order_id={int(order_id)} reason={_FILL_FETCH_REASON_FEE}"
             )
-        return avg_price, fee
+            return avg_price, None, None
+        return avg_price, fee, None
     except Exception as exc:
+        reason = f"exception: {exc}"
         print(
             f"[{ts}] [WARN] gmo_fetch_order_execution_fill failed:"
-            f" order_id={int(order_id)} reason=exception: {exc}"
+            f" order_id={int(order_id)} reason={reason}"
         )
-        return None, None
+        return None, None, reason
 
 
 def gmo_fetch_order_execution_fee(order_id: int) -> Optional[int]:
@@ -3610,7 +3696,7 @@ def gmo_fetch_order_execution_fee(order_id: int) -> Optional[int]:
     注: GMO API で orderId 指定による約定取得は /v1/executions（/v1/latestExecutions ではない）。
     レスポンスが空・fee 欠損・例外発生時は None（呼び出し側は理論値フォールバックへ）。
     """
-    _avg_price, fee = gmo_fetch_order_execution_fill(order_id)
+    _avg_price, fee, _reason = gmo_fetch_order_execution_fill(order_id)
     return fee
 
 
