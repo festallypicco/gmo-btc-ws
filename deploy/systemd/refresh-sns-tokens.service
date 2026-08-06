@@ -1,0 +1,9 @@
+[Unit]
+Description=BTC trading SNS access token refresh (Threads/Instagram)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gmo-btc-ws
+User=takuya
+Group=takuya
+ExecStart=/bin/bash /opt/gmo-btc-ws/scripts/run_refresh_sns_tokens.sh
