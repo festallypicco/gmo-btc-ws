@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple
 
 from threads_poster import _merged_env  # .env読み込みの仕組みを共通化
+from sns_reel_video import REELS_THUMB_OFFSET_MS  # フックフェード完了時刻から算出
 
 LOGGER = logging.getLogger("instagram_poster")
 
@@ -356,6 +357,8 @@ def _build_dry_run_payload(
             "media_type": "REELS",
             "video_url": f"{PUBLIC_MEDIA_DOMAIN}/<token>.mp4",
             "caption": caption,
+            # 冒頭フックのフェードイン完了直後（sns_reel_video の定数から算出）
+            "thumb_offset": str(int(REELS_THUMB_OFFSET_MS)),
             "access_token": "(redacted)" if creds else "(missing)",
         },
         "publish_fields": {
@@ -365,6 +368,7 @@ def _build_dry_run_payload(
         "user_id_configured": bool(creds),
         "access_token_configured": bool(creds),
         "caption_length": len(caption),
+        "thumb_offset_ms": int(REELS_THUMB_OFFSET_MS),
         "video_path": str(video_path),
     }
 
@@ -510,6 +514,8 @@ def _run_create_poll_publish(
             "media_type": "REELS",
             "video_url": video_url,
             "caption": caption,
+            # プロフィール一覧サムネ: フック文字がはっきり見えるフレーム
+            "thumb_offset": str(int(REELS_THUMB_OFFSET_MS)),
             "access_token": creds.access_token,
         },
     )
@@ -581,6 +587,7 @@ def format_dry_run_telegram_message(
         f"user_id_configured={payload.get('user_id_configured')}",
         f"access_token_configured={payload.get('access_token_configured')}",
         f"caption_length={payload.get('caption_length')}",
+        f"thumb_offset_ms={payload.get('thumb_offset_ms')}",
         "",
         "--- caption ---",
         caption_preview,

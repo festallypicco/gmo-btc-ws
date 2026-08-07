@@ -229,6 +229,20 @@ def test_hook_line_fade_is_animated() -> None:
     assert _header_strip(early) == _header_strip(late)
 
 
+def test_reel_thumb_offset_after_hook_fade_complete() -> None:
+    """サムネはフック全行のフェード完了直後(+margin)の時刻を指す。"""
+    visible_i = reel.hook_text_fully_visible_frame_index()
+    assert reel._hook_line_alphas(visible_i - 1, fps=reel.FPS, line_count=3)[-1] < 1.0
+    assert all(
+        a >= 1.0
+        for a in reel._hook_line_alphas(visible_i, fps=reel.FPS, line_count=3)
+    )
+    expected_ms = int(round(visible_i * 1000.0 / reel.FPS)) + reel.HOOK_THUMB_OFFSET_MARGIN_MS
+    assert reel.reel_thumb_offset_ms() == expected_ms
+    assert reel.REELS_THUMB_OFFSET_MS == expected_ms
+    assert expected_ms > 0
+
+
 def test_reel_slides_use_only_allowed_keys() -> None:
     public = _allowed_public()
     hook, slides = reel.build_reel_slide_texts("2026-07-22", public)

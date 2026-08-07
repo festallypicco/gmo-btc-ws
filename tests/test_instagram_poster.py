@@ -85,6 +85,10 @@ def test_dry_run_does_not_call_http_or_copy_file(
     assert result.dry_run_payload is not None
     assert result.dry_run_payload["create_fields"]["caption"] == "caption body"
     assert result.dry_run_payload["create_fields"]["media_type"] == "REELS"
+    assert result.dry_run_payload["create_fields"]["thumb_offset"] == str(
+        ig.REELS_THUMB_OFFSET_MS
+    )
+    assert result.dry_run_payload["thumb_offset_ms"] == ig.REELS_THUMB_OFFSET_MS
     assert "access_token" not in str(result.dry_run_payload).lower().replace(
         "access_token", ""
     )
@@ -157,6 +161,7 @@ def test_success_marks_flag_builds_url_and_removes_public_media_file(
     assert calls[0][1]["media_type"] == "REELS"
     assert calls[0][1]["video_url"] == "https://m7x2kq9.festallypicco.com/" + "a" * 40 + ".mp4"
     assert calls[0][1]["caption"] == "hello instagram"
+    assert calls[0][1]["thumb_offset"] == str(ig.REELS_THUMB_OFFSET_MS)
 
     # 投稿成功時は公開用ファイルをその場で削除する
     assert not (public_media_dir / (("a" * 40) + ".mp4")).exists()

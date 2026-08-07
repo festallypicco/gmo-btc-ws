@@ -53,6 +53,8 @@ COUNTUP_SEC = 0.9
 ROW_STAGGER_SEC = 0.12
 # フック行ごとのフェード開始ずれ（静止感を抑える）
 HOOK_LINE_STAGGER_SEC = 0.18
+# Instagram Reels サムネイル用: フック全行が不透明になった直後からの余裕（ms）
+HOOK_THUMB_OFFSET_MARGIN_MS = 150
 
 # わずかに青みがかったダークネイビー（純黒ではない）
 BG_COLOR = (14, 22, 40)
@@ -503,6 +505,39 @@ def _hook_line_alphas(
         local = frame_index - i * stagger
         alphas.append(min(1.0, max(0.0, (local + 1) / fade_frames)))
     return alphas
+
+
+def hook_text_fully_visible_frame_index(
+    *,
+    fps: int = FPS,
+    line_count: int = HOOK_LAYOUT.line_count,
+) -> int:
+    """
+    フック全行のフェードインが完了する最初のフレーム index（0-based）。
+    _hook_line_alphas と同じフレーム換算式を使う。
+    """
+    fade_frames = max(1, int(round(TEXT_FADE_SEC * fps)))
+    stagger = max(1, int(round(HOOK_LINE_STAGGER_SEC * fps)))
+    return (fade_frames - 1) + max(0, line_count - 1) * stagger
+
+
+def reel_thumb_offset_ms(
+    *,
+    fps: int = FPS,
+    line_count: int = HOOK_LAYOUT.line_count,
+    margin_ms: int = HOOK_THUMB_OFFSET_MARGIN_MS,
+) -> int:
+    """
+    Instagram Reels の thumb_offset（ミリ秒）を返す。
+    フック文字が全行はっきり見えた直後 + margin を選ぶ。
+    """
+    frame = hook_text_fully_visible_frame_index(fps=fps, line_count=line_count)
+    base_ms = int(round(frame / float(fps) * 1000.0))
+    return max(0, base_ms + int(margin_ms))
+
+
+# モジュール読み込み時点の既定値（フェード定数から算出。Instagram投稿側が参照する）
+REELS_THUMB_OFFSET_MS = reel_thumb_offset_ms()
 
 
 def _draw_hook_on_template(
