@@ -33,6 +33,7 @@ import hmac
 import json
 import math
 import os
+import sys
 import threading
 import time
 import urllib.error
@@ -3324,6 +3325,61 @@ class GmoApiError(RuntimeError):
         return codes
 
 
+def _gmo_messages_contain_code(messages: Any, code: str) -> bool:
+    """GMO messages 配列に指定 message_code が含まれるか。"""
+    if not isinstance(messages, list):
+        return False
+    for item in messages:
+        if isinstance(item, dict) and str(item.get("message_code")) == code:
+            return True
+    return False
+
+
+def _format_err5008_diag_line(
+    *,
+    caller: str,
+    endpoint: str,
+    api_timestamp: str,
+    sign_to_send_ms: float,
+    rtt_ms: float,
+    response_date: str,
+) -> str:
+    """ERR-5008 切り分け用の1行診断ログ文字列。"""
+    return (
+        f"[ERR5008-DIAG] caller={caller} endpoint={endpoint}"
+        f" api_timestamp={api_timestamp}"
+        f" sign_to_send_ms={sign_to_send_ms:.1f}"
+        f" rtt_ms={rtt_ms:.1f}"
+        f" response_date={response_date}"
+    )
+
+
+def _maybe_log_err5008_diag(
+    *,
+    messages: Any,
+    caller: str,
+    endpoint: str,
+    api_timestamp: str,
+    sign_to_send_ms: float,
+    rtt_ms: float,
+    response_date: str,
+) -> None:
+    """ERR-5008 のときだけ診断ログを出す（通常時は無出力）。"""
+    if not _gmo_messages_contain_code(messages, "ERR-5008"):
+        return
+    print(
+        _format_err5008_diag_line(
+            caller=caller,
+            endpoint=endpoint,
+            api_timestamp=api_timestamp,
+            sign_to_send_ms=sign_to_send_ms,
+            rtt_ms=rtt_ms,
+            response_date=response_date,
+        ),
+        flush=True,
+    )
+
+
 def is_benign_cancel_error(exc: GmoApiError) -> bool:
     """すでに約定済み/取消済み等で cancel 対象が無いケース。"""
     return any(code in _CANCEL_ORDER_BENIGN_CODES for code in exc.message_codes)
@@ -3469,6 +3525,8 @@ def _gmo_private_request(
     api_key, api_secret = _resolve_gmo_api_credentials(credential_scope)
 
     timestamp = str(int(time.time() * 1000))
+    # 署名時刻〜送信直前の遅延計測（ERR-5008 切り分け用。通常時はログしない）
+    t_sign_mono = time.monotonic()
     payload_obj = body if body is not None else {}
     payload = json.dumps(payload_obj, separators=(",", ":"), ensure_ascii=False) if body is not None else ""
     method_u = method.upper()
@@ -3498,13 +3556,47 @@ def _gmo_private_request(
         method=method_u,
     )
     try:
+        caller = sys._getframe(1).f_code.co_name
+    except (ValueError, AttributeError):
+        caller = "?"
+    endpoint = f"{method_u} {path}"
+
+    t_send_mono = time.monotonic()
+    sign_to_send_ms = (t_send_mono - t_sign_mono) * 1000.0
+    response_date = ""
+    try:
         with urllib.request.urlopen(request, timeout=15) as response:
+            try:
+                response_date = str(response.headers.get("Date") or "")
+            except Exception:
+                response_date = ""
             raw = response.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
+        rtt_ms = (time.monotonic() - t_send_mono) * 1000.0
         body_text = exc.read().decode("utf-8", errors="replace")
+        try:
+            response_date = str(exc.headers.get("Date") or "")
+        except Exception:
+            response_date = ""
+        try:
+            err_doc = json.loads(body_text)
+        except json.JSONDecodeError:
+            err_doc = None
+        if isinstance(err_doc, dict):
+            _maybe_log_err5008_diag(
+                messages=err_doc.get("messages"),
+                caller=caller,
+                endpoint=endpoint,
+                api_timestamp=timestamp,
+                sign_to_send_ms=sign_to_send_ms,
+                rtt_ms=rtt_ms,
+                response_date=response_date,
+            )
         raise RuntimeError(f"GMO API HTTP {exc.code}: {body_text}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"GMO API connection error: {exc}") from exc
+
+    rtt_ms = (time.monotonic() - t_send_mono) * 1000.0
 
     try:
         payload_doc = json.loads(raw)
@@ -3515,6 +3607,15 @@ def _gmo_private_request(
         raise RuntimeError("GMO API response is not a JSON object")
     status = payload_doc.get("status")
     if status not in (0, "0"):
+        _maybe_log_err5008_diag(
+            messages=payload_doc.get("messages"),
+            caller=caller,
+            endpoint=endpoint,
+            api_timestamp=timestamp,
+            sign_to_send_ms=sign_to_send_ms,
+            rtt_ms=rtt_ms,
+            response_date=response_date,
+        )
         raise GmoApiError(status=status, messages=payload_doc.get("messages"))
     return payload_doc.get("data")
 
