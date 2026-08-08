@@ -92,20 +92,28 @@ TRADE_HISTORY_MAXLEN = 100
 _DAILY_MAINTENANCE_START = dtime(5, 55, 0)
 _DAILY_MAINTENANCE_END = dtime(6, 30, 0)
 # 定期メンテ: 毎週土曜 09:00:00 - 11:00:00
+# 終了後プレオープン: 11:00-11:10 は取消のみ受付のため、判定上はメンテ継続扱い
 _WEEKLY_MAINTENANCE_WEEKDAY = 5  # Monday=0 ... Saturday=5
 _WEEKLY_MAINTENANCE_START = dtime(9, 0, 0)
 _WEEKLY_MAINTENANCE_END = dtime(11, 0, 0)
+_WEEKLY_MAINTENANCE_POST_GRACE_MINUTES = 10
+_WEEKLY_MAINTENANCE_EFFECTIVE_END = dtime(11, 10, 0)  # END + POST_GRACE
 # プレメンテ既定（config の maintenance_prepare_minutes 未指定時と同値）
 _DEFAULT_MAINTENANCE_PREPARE_MINUTES = 5
 _SAFE_MODE_COOLDOWN_MINUTES = 15
 
 
 def is_weekly_maintenance_window(now: datetime) -> bool:
-    """毎週土曜 09:00-11:00 JST の定期メンテ枠か。"""
+    """
+    毎週土曜の週次メンテ枠（本メンテ + 終了後プレオープン）か。
+
+    GMO 告知の本メンテは 09:00-11:00 だが、11:00-11:10 はプレオープン
+    （注文取消のみ）のため、実効上は [09:00, 11:10) をメンテ扱いとする。
+    """
     if now.weekday() != _WEEKLY_MAINTENANCE_WEEKDAY:
         return False
     now_t = now.time()
-    return _WEEKLY_MAINTENANCE_START <= now_t < _WEEKLY_MAINTENANCE_END
+    return _WEEKLY_MAINTENANCE_START <= now_t < _WEEKLY_MAINTENANCE_EFFECTIVE_END
 
 
 def is_daily_maintenance_window(now: datetime) -> bool:
@@ -134,7 +142,7 @@ def is_gmo_scheduled_maintenance_window(
     prepare_minutes: int = _DEFAULT_MAINTENANCE_PREPARE_MINUTES,
 ) -> bool:
     """
-    GMO 定期メンテ（日次・週次・プレメンテ）のいずれかにあるか。
+    GMO 定期メンテ（日次・週次本枠+終了後プレオープン・開始前プレメンテ）のいずれかにあるか。
     監視スクリプトの API スキップ判定など、エンジン外からも同じ定義を参照する。
     """
     return (
@@ -142,6 +150,8 @@ def is_gmo_scheduled_maintenance_window(
         or is_weekly_maintenance_window(now)
         or is_daily_maintenance_window(now)
     )
+
+
 _RUNTIME_DIR = Path(__file__).resolve().parent.parent / "runtime"
 _MANUAL_STOP_FLAG_PATH = _RUNTIME_DIR / "manual_stop.flag"
 _REAL_STARTUP_RECONCILE_STATE_PATH = (
@@ -1193,7 +1203,10 @@ class VirtualTrader:
                     "既存ポジションは wait モードで監視継続します。"
                 )
         if in_regular:
-            print("[WARNING] [Maintenance] 定期メンテナンスのため待機中（毎週土曜 09:00-11:00 JST）。")
+            print(
+                "[WARNING] [Maintenance] 定期メンテナンスのため待機中"
+                "（毎週土曜 09:00-11:10 JST、終了後プレオープン含む）。"
+            )
         if in_daily:
             print("[WARNING] [Maintenance] 定期メンテナンスのため待機中（毎日 05:55-06:30 JST）。")
         if in_safe:

@@ -375,7 +375,10 @@ def test_default_fetch_passes_readonly_credential_scope(
         datetime(2026, 8, 8, 8, 59, 59),  # Saturday pre-maint end
         datetime(2026, 8, 8, 9, 0, 0),  # Saturday weekly start
         datetime(2026, 8, 8, 10, 30, 0),  # Saturday weekly mid
-        datetime(2026, 8, 8, 10, 59, 59),  # Saturday weekly near end
+        datetime(2026, 8, 8, 10, 59, 59),  # Saturday weekly near announced end
+        datetime(2026, 8, 8, 11, 0, 0),  # post-open grace start
+        datetime(2026, 8, 8, 11, 5, 0),  # mid post-open grace
+        datetime(2026, 8, 8, 11, 9, 59),  # post-open grace end
         datetime(2026, 8, 8, 6, 0, 0),  # Saturday daily window
         datetime(2026, 8, 7, 5, 55, 0),  # Friday daily start
     ],
@@ -410,7 +413,8 @@ def test_maintenance_window_skips_api_and_updates_heartbeat(
     "now",
     [
         datetime(2026, 8, 8, 8, 54, 59),  # just before pre-maint
-        datetime(2026, 8, 8, 11, 0, 0),  # weekly end (exclusive)
+        datetime(2026, 8, 8, 11, 10, 0),  # after post-open grace (exclusive end)
+        datetime(2026, 8, 8, 11, 10, 1),  # just after post-open grace
         datetime(2026, 8, 7, 12, 0, 0),  # weekday midday
         datetime(2026, 8, 7, 6, 30, 0),  # daily end (exclusive)
     ],
