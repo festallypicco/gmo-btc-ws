@@ -95,7 +95,53 @@ _DAILY_MAINTENANCE_END = dtime(6, 30, 0)
 _WEEKLY_MAINTENANCE_WEEKDAY = 5  # Monday=0 ... Saturday=5
 _WEEKLY_MAINTENANCE_START = dtime(9, 0, 0)
 _WEEKLY_MAINTENANCE_END = dtime(11, 0, 0)
+# プレメンテ既定（config の maintenance_prepare_minutes 未指定時と同値）
+_DEFAULT_MAINTENANCE_PREPARE_MINUTES = 5
 _SAFE_MODE_COOLDOWN_MINUTES = 15
+
+
+def is_weekly_maintenance_window(now: datetime) -> bool:
+    """毎週土曜 09:00-11:00 JST の定期メンテ枠か。"""
+    if now.weekday() != _WEEKLY_MAINTENANCE_WEEKDAY:
+        return False
+    now_t = now.time()
+    return _WEEKLY_MAINTENANCE_START <= now_t < _WEEKLY_MAINTENANCE_END
+
+
+def is_daily_maintenance_window(now: datetime) -> bool:
+    """毎日 05:55-06:30 JST の定期メンテ枠か。"""
+    now_t = now.time()
+    return _DAILY_MAINTENANCE_START <= now_t < _DAILY_MAINTENANCE_END
+
+
+def is_weekly_pre_maintenance_window(
+    now: datetime,
+    *,
+    prepare_minutes: int = _DEFAULT_MAINTENANCE_PREPARE_MINUTES,
+) -> bool:
+    """週次メンテ開始前のプレメンテ枠（既定 8:55-9:00）か。"""
+    if now.weekday() != _WEEKLY_MAINTENANCE_WEEKDAY:
+        return False
+    minutes = max(0, int(prepare_minutes))
+    start = datetime.combine(now.date(), _WEEKLY_MAINTENANCE_START)
+    pre_start = start - timedelta(minutes=minutes)
+    return pre_start <= now < start
+
+
+def is_gmo_scheduled_maintenance_window(
+    now: datetime,
+    *,
+    prepare_minutes: int = _DEFAULT_MAINTENANCE_PREPARE_MINUTES,
+) -> bool:
+    """
+    GMO 定期メンテ（日次・週次・プレメンテ）のいずれかにあるか。
+    監視スクリプトの API スキップ判定など、エンジン外からも同じ定義を参照する。
+    """
+    return (
+        is_weekly_pre_maintenance_window(now, prepare_minutes=prepare_minutes)
+        or is_weekly_maintenance_window(now)
+        or is_daily_maintenance_window(now)
+    )
 _RUNTIME_DIR = Path(__file__).resolve().parent.parent / "runtime"
 _MANUAL_STOP_FLAG_PATH = _RUNTIME_DIR / "manual_stop.flag"
 _REAL_STARTUP_RECONCILE_STATE_PATH = (
@@ -277,7 +323,9 @@ class VirtualTrader:
         self._locked_profile_name: Optional[str] = None
         self.config_version: str          = "default"
         self.maintenance_pre_action: str = self._normalize_pre_action(maintenance_pre_action)
-        self.maintenance_prepare_minutes: int = max(0, int(maintenance_prepare_minutes))
+        self.maintenance_prepare_minutes: int = max(
+            0, int(maintenance_prepare_minutes)
+        )
         self._before_entry_order = before_entry_order
         self._on_order_placed = on_order_placed
         self.daily_loss_limit_pct: float = float(daily_loss_limit_pct)
@@ -1032,21 +1080,15 @@ class VirtualTrader:
                 self._exit_stop_loss(snap)
 
     def _is_weekly_maintenance_window(self, now: datetime) -> bool:
-        if now.weekday() != _WEEKLY_MAINTENANCE_WEEKDAY:
-            return False
-        now_t = now.time()
-        return _WEEKLY_MAINTENANCE_START <= now_t < _WEEKLY_MAINTENANCE_END
+        return is_weekly_maintenance_window(now)
 
     def _is_daily_maintenance_window(self, now: datetime) -> bool:
-        now_t = now.time()
-        return _DAILY_MAINTENANCE_START <= now_t < _DAILY_MAINTENANCE_END
+        return is_daily_maintenance_window(now)
 
     def _is_weekly_pre_maintenance_window(self, now: datetime) -> bool:
-        if now.weekday() != _WEEKLY_MAINTENANCE_WEEKDAY:
-            return False
-        start = datetime.combine(now.date(), _WEEKLY_MAINTENANCE_START)
-        pre_start = start - timedelta(minutes=self.maintenance_prepare_minutes)
-        return pre_start <= now < start
+        return is_weekly_pre_maintenance_window(
+            now, prepare_minutes=self.maintenance_prepare_minutes
+        )
 
     def _is_safe_mode_active(self, now: datetime) -> bool:
         if self._safe_mode_until is None:
@@ -1055,9 +1097,9 @@ class VirtualTrader:
 
     def _is_entry_blocked(self, now: datetime) -> bool:
         return (
-            self._is_weekly_pre_maintenance_window(now)
-            or self._is_weekly_maintenance_window(now)
-            or self._is_daily_maintenance_window(now)
+            is_gmo_scheduled_maintenance_window(
+                now, prepare_minutes=self.maintenance_prepare_minutes
+            )
             or self._is_safe_mode_active(now)
             or _MANUAL_STOP_FLAG_PATH.exists()
         )

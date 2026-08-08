@@ -19,7 +19,11 @@ BTC_DIR = ROOT_DIR / "btc_trading_tool"
 if str(BTC_DIR) not in sys.path:
     sys.path.insert(0, str(BTC_DIR))
 
-from virtual_trader import fetch_active_orders  # noqa: E402
+from virtual_trader import (  # noqa: E402
+    _DEFAULT_MAINTENANCE_PREPARE_MINUTES,
+    fetch_active_orders,
+    is_gmo_scheduled_maintenance_window,
+)
 
 CONFIG_PATH = ROOT_DIR / "config" / "config.json"
 LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
@@ -83,24 +87,46 @@ def _ensure_gmo_credentials_from_env_files() -> None:
                 os.environ[name] = value
 
 
+def _load_config_payload(config_path: Path) -> Dict[str, Any]:
+    if not config_path.exists():
+        return {}
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        LOGGER.warning("Failed to read config.json: %s", exc)
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return payload
+
+
 def load_trading_mode(config_path: Path = CONFIG_PATH) -> str:
     """
     config.json の trading_mode を返す。
     ファイル無し・キー無し・不正値は virtual 扱い（チェック対象外）。
     """
-    if not config_path.exists():
-        return "virtual"
-    try:
-        payload = json.loads(config_path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        LOGGER.warning("Failed to read config.json; treat as virtual: %s", exc)
-        return "virtual"
-    if not isinstance(payload, dict):
+    payload = _load_config_payload(config_path)
+    if not payload and not config_path.exists():
         return "virtual"
     mode = str(payload.get("trading_mode", "virtual")).strip().lower()
     if mode not in {"virtual", "real"}:
         return "virtual"
     return mode
+
+
+def load_maintenance_prepare_minutes(config_path: Path = CONFIG_PATH) -> int:
+    """
+    config.json の maintenance_prepare_minutes を返す。
+    エンジン既定と同じく未指定・不正値は 5。
+    """
+    payload = _load_config_payload(config_path)
+    raw = payload.get(
+        "maintenance_prepare_minutes", _DEFAULT_MAINTENANCE_PREPARE_MINUTES
+    )
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return _DEFAULT_MAINTENANCE_PREPARE_MINUTES
 
 
 def _parse_optional_order_id(raw: Any) -> Optional[int]:
@@ -266,10 +292,12 @@ def check_orphan_orders(
     fetch_fn: Optional[Callable[[], List[Dict[str, Any]]]] = None,
     send_fn: Optional[Callable[[str], bool]] = None,
     ensure_credentials_fn: Optional[Callable[[], None]] = None,
+    now: Optional[datetime] = None,
 ) -> Dict[str, Any]:
     """
     real mode のみ孤児注文を検査する。
-    virtual / 未設定時は API・Telegram を呼ばずスキップする。
+    virtual / 未設定時、および GMO 定期メンテ枠（プレメンテ含む）は
+    API・Telegram を呼ばずスキップする（心拍は更新する）。
 
     アラートは同一 orderId が連続2回 orphan と判定された場合のみ送る
     （1回目は状態ファイルへ記録して保留）。
@@ -282,6 +310,25 @@ def check_orphan_orders(
         )
         _record_monitor_heartbeat()
         return {"status": "skipped", "reason": "not_real", "trading_mode": trading_mode}
+
+    check_now = now if now is not None else datetime.now()
+    prepare_minutes = load_maintenance_prepare_minutes(config_path)
+    if is_gmo_scheduled_maintenance_window(
+        check_now, prepare_minutes=prepare_minutes
+    ):
+        LOGGER.info(
+            "GMO scheduled maintenance window; orphan order check skipped. "
+            "now=%s prepare_minutes=%d",
+            check_now.isoformat(timespec="seconds"),
+            prepare_minutes,
+        )
+        _record_monitor_heartbeat()
+        return {
+            "status": "skipped",
+            "reason": "maintenance_window",
+            "trading_mode": trading_mode,
+            "prepare_minutes": prepare_minutes,
+        }
 
     if ensure_credentials_fn is not None:
         ensure_credentials_fn()

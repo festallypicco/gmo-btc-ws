@@ -8,18 +8,26 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from unittest.mock import patch
 
 import pytest
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SCRIPTS = _ROOT / "scripts"
+_BTC = _ROOT / "btc_trading_tool"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
+if str(_BTC) not in sys.path:
+    sys.path.insert(0, str(_BTC))
 
 import check_orphan_orders as coo  # noqa: E402
+import virtual_trader as vt  # noqa: E402
+
+# 既存テストが土曜メンテ枠で誤スキップしないよう、平日昼を既定にする
+_SAFE_NOW = datetime(2026, 8, 7, 12, 0, 0)  # Friday
 
 
 @pytest.fixture
@@ -47,10 +55,17 @@ def isolated_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Dict[str,
     }
 
 
-def _write_config(path: Path, trading_mode: str | None) -> None:
+def _write_config(
+    path: Path,
+    trading_mode: str | None,
+    *,
+    maintenance_prepare_minutes: Optional[int] = None,
+) -> None:
     payload: Dict[str, Any] = {"version": "test"}
     if trading_mode is not None:
         payload["trading_mode"] = trading_mode
+    if maintenance_prepare_minutes is not None:
+        payload["maintenance_prepare_minutes"] = maintenance_prepare_minutes
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
@@ -111,6 +126,7 @@ def test_no_orphans_when_all_active_match_known_ids(isolated_paths: Dict[str, Pa
         fetch_fn=fetch_fn,
         send_fn=lambda text: alerts.append(text) or True,
         ensure_credentials_fn=lambda: None,
+        now=_SAFE_NOW,
     )
 
     assert result["status"] == "ok"
@@ -124,6 +140,7 @@ def _run_check(
     *,
     fetch_fn: Any,
     alerts: List[str],
+    now: datetime = _SAFE_NOW,
 ) -> Dict[str, Any]:
     return coo.check_orphan_orders(
         config_path=isolated_paths["config"],
@@ -132,6 +149,7 @@ def _run_check(
         fetch_fn=fetch_fn,
         send_fn=lambda text: alerts.append(text) or True,
         ensure_credentials_fn=lambda: None,
+        now=now,
     )
 
 
@@ -292,12 +310,15 @@ def test_non_real_mode_skips_api_and_telegram(isolated_paths: Dict[str, Path]) -
         fetch_fn=lambda: fetch_calls.append(1) or [],
         send_fn=lambda text: alerts.append(text) or True,
         ensure_credentials_fn=lambda: None,
+        now=_SAFE_NOW,
     )
 
     assert result["status"] == "skipped"
     assert result["reason"] == "not_real"
     assert fetch_calls == []
     assert alerts == []
+    heartbeats = json.loads(isolated_paths["heartbeats"].read_text(encoding="utf-8"))
+    assert "check_orphan_orders" in heartbeats
 
 
 def test_missing_trading_mode_skips_without_error(isolated_paths: Dict[str, Path]) -> None:
@@ -311,6 +332,7 @@ def test_missing_trading_mode_skips_without_error(isolated_paths: Dict[str, Path
         fetch_fn=lambda: fetch_calls.append(1) or [],
         send_fn=lambda text: alerts.append(text) or True,
         ensure_credentials_fn=lambda: None,
+        now=_SAFE_NOW,
     )
 
     assert result["status"] == "skipped"
@@ -337,9 +359,150 @@ def test_default_fetch_passes_readonly_credential_scope(
             fetch_fn=None,
             send_fn=lambda text: alerts.append(text) or True,
             ensure_credentials_fn=lambda: None,
+            now=_SAFE_NOW,
         )
 
     assert result["status"] == "ok"
     assert len(seen) == 1
     assert seen[0]["kwargs"].get("credential_scope") == "readonly"
     assert alerts == []
+
+
+@pytest.mark.parametrize(
+    "now",
+    [
+        datetime(2026, 8, 8, 8, 55, 0),  # Saturday pre-maint start
+        datetime(2026, 8, 8, 8, 59, 59),  # Saturday pre-maint end
+        datetime(2026, 8, 8, 9, 0, 0),  # Saturday weekly start
+        datetime(2026, 8, 8, 10, 30, 0),  # Saturday weekly mid
+        datetime(2026, 8, 8, 10, 59, 59),  # Saturday weekly near end
+        datetime(2026, 8, 8, 6, 0, 0),  # Saturday daily window
+        datetime(2026, 8, 7, 5, 55, 0),  # Friday daily start
+    ],
+)
+def test_maintenance_window_skips_api_and_updates_heartbeat(
+    isolated_paths: Dict[str, Path],
+    now: datetime,
+) -> None:
+    _write_config(isolated_paths["config"], "real")
+    _write_live_state(isolated_paths["db"], entry_order_id=111)
+    alerts: List[str] = []
+    fetch_calls: List[int] = []
+
+    result = coo.check_orphan_orders(
+        config_path=isolated_paths["config"],
+        db_path=isolated_paths["db"],
+        fetch_fn=lambda: fetch_calls.append(1) or [],
+        send_fn=lambda text: alerts.append(text) or True,
+        ensure_credentials_fn=lambda: None,
+        now=now,
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "maintenance_window"
+    assert fetch_calls == []
+    assert alerts == []
+    heartbeats = json.loads(isolated_paths["heartbeats"].read_text(encoding="utf-8"))
+    assert "check_orphan_orders" in heartbeats
+
+
+@pytest.mark.parametrize(
+    "now",
+    [
+        datetime(2026, 8, 8, 8, 54, 59),  # just before pre-maint
+        datetime(2026, 8, 8, 11, 0, 0),  # weekly end (exclusive)
+        datetime(2026, 8, 7, 12, 0, 0),  # weekday midday
+        datetime(2026, 8, 7, 6, 30, 0),  # daily end (exclusive)
+    ],
+)
+def test_outside_maintenance_window_still_calls_api(
+    isolated_paths: Dict[str, Path],
+    now: datetime,
+) -> None:
+    _write_config(isolated_paths["config"], "real")
+    _write_live_state(isolated_paths["db"], entry_order_id=111)
+    fetch_calls: List[int] = []
+
+    result = coo.check_orphan_orders(
+        config_path=isolated_paths["config"],
+        db_path=isolated_paths["db"],
+        fetch_fn=lambda: fetch_calls.append(1) or [
+            {"orderId": 111, "side": "BUY", "price": "1", "size": "0.01"}
+        ],
+        send_fn=lambda text: True,
+        ensure_credentials_fn=lambda: None,
+        now=now,
+    )
+
+    assert result["status"] == "ok"
+    assert fetch_calls == [1]
+
+
+def test_pre_maintenance_uses_config_prepare_minutes(
+    isolated_paths: Dict[str, Path],
+) -> None:
+    """prepare_minutes=10 なら 8:50 からスキップする。"""
+    _write_config(
+        isolated_paths["config"],
+        "real",
+        maintenance_prepare_minutes=10,
+    )
+    _write_live_state(isolated_paths["db"], entry_order_id=1)
+    fetch_calls: List[int] = []
+    now = datetime(2026, 8, 8, 8, 50, 0)
+
+    result = coo.check_orphan_orders(
+        config_path=isolated_paths["config"],
+        db_path=isolated_paths["db"],
+        fetch_fn=lambda: fetch_calls.append(1) or [],
+        send_fn=lambda text: True,
+        ensure_credentials_fn=lambda: None,
+        now=now,
+    )
+    assert result["status"] == "skipped"
+    assert result["reason"] == "maintenance_window"
+    assert result["prepare_minutes"] == 10
+    assert fetch_calls == []
+
+    # 8:49 はまだ枠外
+    result2 = coo.check_orphan_orders(
+        config_path=isolated_paths["config"],
+        db_path=isolated_paths["db"],
+        fetch_fn=lambda: fetch_calls.append(1)
+        or [{"orderId": 1, "side": "BUY", "price": "1", "size": "0.01"}],
+        send_fn=lambda text: True,
+        ensure_credentials_fn=lambda: None,
+        now=datetime(2026, 8, 8, 8, 49, 0),
+    )
+    assert result2["status"] == "ok"
+    assert fetch_calls == [1]
+
+
+def test_shared_maintenance_helpers_match_virtual_trader_instance() -> None:
+    """モジュール関数と VirtualTrader メソッドの判定が一致すること。"""
+    trader = vt.VirtualTrader(
+        initial_jpy=50_000.0,
+        maintenance_prepare_minutes=5,
+    )
+    samples = [
+        datetime(2026, 8, 8, 8, 55, 0),
+        datetime(2026, 8, 8, 9, 30, 0),
+        datetime(2026, 8, 8, 11, 0, 0),
+        datetime(2026, 8, 7, 5, 55, 0),
+        datetime(2026, 8, 7, 12, 0, 0),
+    ]
+    for now in samples:
+        assert trader._is_weekly_maintenance_window(now) == vt.is_weekly_maintenance_window(
+            now
+        )
+        assert trader._is_daily_maintenance_window(now) == vt.is_daily_maintenance_window(
+            now
+        )
+        assert trader._is_weekly_pre_maintenance_window(
+            now
+        ) == vt.is_weekly_pre_maintenance_window(now, prepare_minutes=5)
+        assert (
+            trader._is_weekly_pre_maintenance_window(now)
+            or trader._is_weekly_maintenance_window(now)
+            or trader._is_daily_maintenance_window(now)
+        ) == vt.is_gmo_scheduled_maintenance_window(now, prepare_minutes=5)
