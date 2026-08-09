@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import statistics
 import sys
 from dataclasses import asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Match
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODULE_DIR = PROJECT_ROOT / "btc_trading_tool"
@@ -49,9 +50,233 @@ OUTLIER_DIVERGENCE_THRESHOLD = 0.20
 ROLLOUT_TOTAL_DAYS = 3
 ROLLOUT_RATIOS = [0.3, 0.6, 1.0]
 
+# Telegram 表示用: プロファイル配下パラメータの日本語ラベル
+PROFILE_PARAM_LABELS_JA: Dict[str, str] = {
+    "imbalance_entry_threshold": "エントリー用インバランス閾値",
+    "min_entry_wall_btc": "エントリーに必要な板の厚み",
+    "min_valid_wall_btc": "板が薄い場合の見送り閾値",
+    "max_spread_pct": "スプレッド上限（％）",
+    "max_allowed_spread": "スプレッド上限（円）",
+    "imbalance_cancel_threshold": "未約定キャンセル用インバランス閾値",
+    "take_profit_pct": "利確幅（％）",
+    "stop_loss_pct": "損切り幅（％）",
+    "maker_price_offset_jpy": "指値の内側寄せ幅（円）",
+    "max_order_size_btc": "1回あたりの発注サイズ上限",
+    "daily_target_order_size_btc": "1日あたりの発注サイズ上限",
+    "daily_target_order_size_reasoning": "発注サイズ上限の設定理由",
+}
+
+_PROFILE_IDENTITY_KEYS = frozenset({"name", "start_time", "end_time"})
+
+STATUS_LABELS_JA: Dict[str, str] = {
+    "missing_summary_file": "集計サマリー未作成",
+    "failed_before_moderator": "Proposer/Skeptic呼び出し失敗",
+    "failed_moderator_call": "Moderator呼び出し失敗",
+    "no_update_validation_failed": "提案のバリデーション失敗（見送り）",
+    "held_profile_name_mismatch": "プロファイル名不一致のため保留",
+    "failed_config_write": "config.json書き込み失敗",
+    "applied": "適用完了",
+}
+
 
 def _today_iso() -> str:
     return datetime.now().date().isoformat()
+
+
+def _label_profile_param(param_key: str) -> str:
+    key = str(param_key or "").strip()
+    return PROFILE_PARAM_LABELS_JA.get(key, key or "?")
+
+
+def _format_profile_param_ref(profile_name: str, param_key: str) -> str:
+    return f"{profile_name} / {_label_profile_param(param_key)}"
+
+
+def _localize_profile_field_token(token: str) -> str:
+    """
+    'profiles.name.key' または 'name.key' を日本語ラベル付き表記へ変換する。
+    変換できない場合は入力をそのまま返す。
+    """
+    text = str(token or "").strip()
+    if not text:
+        return text
+    parts = text.split(".")
+    if len(parts) == 3 and parts[0] == "profiles" and parts[1] and parts[2]:
+        return _format_profile_param_ref(parts[1], parts[2])
+    if len(parts) == 2 and parts[0] and parts[1]:
+        return _format_profile_param_ref(parts[0], parts[1])
+    return text
+
+
+def _localize_profile_field_tokens_in_text(text: str) -> str:
+    """文中の name.key / profiles.name.key を日本語ラベルへ置換する。"""
+    pattern = re.compile(
+        r"(?:profiles\.)?[A-Za-z0-9_-]+\.(?:"
+        + "|".join(re.escape(k) for k in PROFILE_PARAM_LABELS_JA.keys())
+        + r")"
+    )
+
+    def _repl(match: Match[str]) -> str:
+        return _localize_profile_field_token(match.group(0))
+
+    return pattern.sub(_repl, str(text or ""))
+
+
+def _values_equal_for_change(before: Any, after: Any) -> bool:
+    if before is None and after is None:
+        return True
+    if _is_number(before) and _is_number(after):
+        return float(before) == float(after)
+    return before == after
+
+
+def _format_change_value(value: Any) -> str:
+    if value is None:
+        return "未設定"
+    if isinstance(value, str):
+        text = value.strip()
+        if len(text) > 120:
+            return text[:117] + "..."
+        return text if text else "(空)"
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, float):
+        # 過剰な小数を抑えつつ、小さな pct も残す
+        return f"{value:.8g}"
+    return str(value)
+
+
+def collect_profile_field_changes(
+    before_profiles: Any,
+    after_profiles: Any,
+) -> List[Tuple[str, str, Any, Any]]:
+    """
+    プロファイル配下の変更差分を (profile_name, key, before, after) で返す。
+    name/start_time/end_time は除外。対象は PROFILE_PARAM_LABELS_JA のキーのみ。
+    """
+    before_map: Dict[str, Dict[str, Any]] = {
+        p.get("name"): p
+        for p in (before_profiles or [])
+        if isinstance(p, dict) and p.get("name")
+    }
+    after_map: Dict[str, Dict[str, Any]] = {
+        p.get("name"): p
+        for p in (after_profiles or [])
+        if isinstance(p, dict) and p.get("name")
+    }
+    changes: List[Tuple[str, str, Any, Any]] = []
+    for profile_name in sorted(set(before_map) | set(after_map)):
+        before_p = before_map.get(profile_name, {})
+        after_p = after_map.get(profile_name, {})
+        keys = sorted(
+            (set(before_p.keys()) | set(after_p.keys())) - _PROFILE_IDENTITY_KEYS
+        )
+        for key in keys:
+            if key not in PROFILE_PARAM_LABELS_JA:
+                continue
+            before_val = before_p.get(key)
+            after_val = after_p.get(key)
+            if key not in before_p:
+                before_val = None
+            if key not in after_p:
+                after_val = None
+            if _values_equal_for_change(before_val, after_val):
+                continue
+            changes.append((str(profile_name), str(key), before_val, after_val))
+    return changes
+
+
+def build_applied_telegram_message(
+    *,
+    target_date: str,
+    updated_reason: Optional[str],
+    profile_changes: List[Tuple[str, str, Any, Any]],
+    outlier_marks: Optional[Dict[str, Dict[str, Any]]] = None,
+    reverted_fields: Optional[List[str]] = None,
+    clamped_to_bounds_fields: Optional[List[str]] = None,
+    rejected_daily_target_reasons: Optional[List[str]] = None,
+    backtest_results: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> str:
+    """status=applied 時の Telegram 本文を組み立てる（送信はしない）。"""
+    lines: List[str] = []
+    lines.append("[BTC AI議論] 本日の変更内容をお知らせします")
+    lines.append(f"date={target_date}")
+
+    reason = str(updated_reason or "").strip()
+    lines.append("判断理由:")
+    lines.append(reason if reason else "理由の記録なし")
+
+    lines.append("数値変更:")
+    if profile_changes:
+        for profile_name, key, before_val, after_val in profile_changes:
+            lines.append(
+                f"- {_format_profile_param_ref(profile_name, key)}: "
+                f"{_format_change_value(before_val)} -> {_format_change_value(after_val)}"
+            )
+    else:
+        lines.append("- なし")
+
+    outlier_marks = outlier_marks or {}
+    if outlier_marks:
+        lines.append("段階適用（外れ値）:")
+        for param_path, info in sorted(outlier_marks.items()):
+            lines.append(
+                f"- {_localize_profile_field_token(param_path)}"
+                f" day {info.get('day_index')}/{info.get('total_days')}"
+                f" applied={info.get('current_applied_value')}"
+                f" target={info.get('target_value')}"
+                f" reason={info.get('reason')}"
+            )
+
+    reverted_fields = reverted_fields or []
+    if reverted_fields:
+        localized = ", ".join(
+            _localize_profile_field_token(item) for item in reverted_fields
+        )
+        lines.append(f"変更幅上限で据え置き: {localized}")
+
+    clamped_to_bounds_fields = clamped_to_bounds_fields or []
+    if clamped_to_bounds_fields:
+        localized = ", ".join(
+            _localize_profile_field_token(item) for item in clamped_to_bounds_fields
+        )
+        lines.append(f"絶対範囲で補正: {localized}")
+
+    rejected_daily_target_reasons = rejected_daily_target_reasons or []
+    if rejected_daily_target_reasons:
+        localized = "; ".join(
+            _localize_profile_field_tokens_in_text(item)
+            for item in rejected_daily_target_reasons
+        )
+        lines.append(f"日次発注サイズ上限の拒否: {localized}")
+
+    gated_profiles = [
+        (name, bt)
+        for name, bt in sorted((backtest_results or {}).items())
+        if bt.get("gated")
+    ]
+    if gated_profiles:
+        lines.append("バックテストにより据え置き:")
+        for name, bt in gated_profiles:
+            reverted_keys = [
+                k
+                for k in bt.get("changed_keys", [])
+                if k in {"imbalance_entry_threshold", "take_profit_pct", "stop_loss_pct"}
+            ]
+            localized_keys = ", ".join(_label_profile_param(k) for k in reverted_keys)
+            lines.append(
+                f"- {name} "
+                f"old_pnl_pct={float(bt.get('old', {}).get('total_pnl_pct', 0.0)):.4f} "
+                f"new_pnl_pct={float(bt.get('new', {}).get('total_pnl_pct', 0.0)):.4f} "
+                f"reverted={localized_keys}"
+            )
+
+    return "\n".join(lines)
+
+
+def _status_label_ja(status: str) -> str:
+    key = str(status or "").strip()
+    return STATUS_LABELS_JA.get(key, key or "unknown")
 
 
 def _iter_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
@@ -729,6 +954,9 @@ def main() -> int:
             "\n".join(
                 [
                     "[BTC AI議論] エラー",
+                    f"date={target_date}",
+                    f"状況: {_status_label_ja('missing_summary_file')}",
+                    f"status=missing_summary_file",
                     f"{target_date}分の集計サマリーが見つかりません。",
                     "build_ai_review_summary.py が正常に実行されたか確認してください。",
                 ]
@@ -743,6 +971,13 @@ def main() -> int:
     except Exception as exc:
         print(f"[ERROR] failed to load summary/config: {exc}", file=sys.stderr)
         return 1
+
+    # ロールアウト適用前の値を保持（Telegram の before→after 用）
+    baseline_profiles = [
+        dict(p)
+        for p in current_config.get("profiles", [])
+        if isinstance(p, dict)
+    ]
 
     # 既存 pending_rollouts の当日分を先に適用（新規提案が無い場合も継続させる）
     try:
@@ -833,6 +1068,9 @@ def main() -> int:
             "\n".join(
                 [
                     "[BTC AI議論] 通知（見送り）",
+                    f"date={target_date}",
+                    f"状況: {_status_label_ja('no_update_validation_failed')}",
+                    "status=no_update_validation_failed",
                     f"{target_date}: AIの提案が3回ともバリデーションに失敗したため、",
                     "今夜の設定更新を安全に見送りました。config.jsonは変更していません。",
                     f"最終エラー: {final_error}",
@@ -861,6 +1099,19 @@ def main() -> int:
         decision_doc["added_names"] = added_names
         decision_doc["removed_names"] = removed_names
         _write_decision_log(decision_path, decision_doc)
+        _notify_non_blocking(
+            "\n".join(
+                [
+                    "[BTC AI議論] 通知（保留）",
+                    f"date={target_date}",
+                    f"状況: {_status_label_ja('held_profile_name_mismatch')}",
+                    "status=held_profile_name_mismatch",
+                    "プロファイル名の集合が現行configと不一致のため、設定更新を保留しました。",
+                    f"追加候補: {', '.join(added_names) if added_names else '(なし)'}",
+                    f"削除候補: {', '.join(removed_names) if removed_names else '(なし)'}",
+                ]
+            )
+        )
         print("[INFO] profile name set changed; update held for manual review")
         return 0
 
@@ -963,6 +1214,9 @@ def main() -> int:
             "\n".join(
                 [
                     "[BTC AI議論] エラー（重要）",
+                    f"date={target_date}",
+                    f"状況: {_status_label_ja('failed_config_write')}",
+                    "status=failed_config_write",
                     f"{target_date}: バリデーション済みの新設定をconfig.jsonへ",
                     "書き込む際にエラーが発生しました。",
                     f"エラー内容: {decision_doc['error']}",
@@ -1026,45 +1280,27 @@ def main() -> int:
     except Exception as exc:
         print(f"[WARNING] failed to append update_log: {exc}", file=sys.stderr)
 
-    # Telegram: 事後報告（外れ値があれば reason を含めて強調）
+    # Telegram: 事後報告（判断理由・数値差分・特殊イベント）
     try:
-        lines: List[str] = []
-        lines.append("[BTC AI議論] 本日の変更内容をお知らせします")
-        lines.append(f"date={target_date}")
-        if outlier_marks:
-            lines.append("outlier_rollout:")
-            for param_path, info in sorted(outlier_marks.items()):
-                lines.append(
-                    f"- {param_path} day {info.get('day_index')}/{info.get('total_days')}"
-                    f" applied={info.get('current_applied_value')} target={info.get('target_value')}"
-                    f" reason={info.get('reason')}"
-                )
-        if reverted_fields:
-            lines.append("reverted(>15% cap): " + ", ".join(reverted_fields))
-        if clamped_to_bounds_fields:
-            lines.append("clamped(bounds): " + ", ".join(clamped_to_bounds_fields))
-        if rejected_daily_target_reasons:
-            lines.append("rejected_daily_target: " + "; ".join(rejected_daily_target_reasons))
-        gated_profiles = [
-            (name, bt)
-            for name, bt in sorted(backtest_results.items())
-            if bt.get("gated")
-        ]
-        if gated_profiles:
-            lines.append("backtest_gated:")
-            for name, bt in gated_profiles:
-                reverted_keys = [
-                    k
-                    for k in bt.get("changed_keys", [])
-                    if k in {"imbalance_entry_threshold", "take_profit_pct", "stop_loss_pct"}
-                ]
-                lines.append(
-                    f"profiles.{name} "
-                    f"old_pnl_pct={float(bt.get('old', {}).get('total_pnl_pct', 0.0)):.4f} "
-                    f"new_pnl_pct={float(bt.get('new', {}).get('total_pnl_pct', 0.0)):.4f} "
-                    f"reverted={','.join(reverted_keys)}"
-                )
-        send_telegram_message("\n".join(lines))
+        profile_changes = collect_profile_field_changes(
+            baseline_profiles,
+            new_payload.get("profiles", []),
+        )
+        message = build_applied_telegram_message(
+            target_date=target_date,
+            updated_reason=(
+                new_payload.get("updated_reason")
+                if isinstance(new_payload, dict)
+                else None
+            ),
+            profile_changes=profile_changes,
+            outlier_marks=outlier_marks,
+            reverted_fields=reverted_fields,
+            clamped_to_bounds_fields=clamped_to_bounds_fields,
+            rejected_daily_target_reasons=rejected_daily_target_reasons,
+            backtest_results=backtest_results,
+        )
+        send_telegram_message(message)
     except Exception as exc:
         print(f"[WARNING] failed to send Telegram notification: {exc}", file=sys.stderr)
 
