@@ -46,7 +46,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
-from telegram_notifier import send_telegram_message
+from telegram_notifier import send_sns_telegram_message, send_telegram_message
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
@@ -84,8 +84,12 @@ ALLOWED_KEYS: Set[str] = {
 }
 
 X_MAX_TWEET_LEN = 280
-POST_MAX_RETRIES = 2
-POST_RETRY_INTERVAL_SEC = 30
+# X API側の一時的な不調（同一トークンで日によって成否が入れ替わる事象、2026-08-13以降で確認）
+# に粘り強く対応するため、指数バックオフで再試行する。
+# 合計待機時間は run_public_report.sh のロック陳腐化判定（LOCK_STALE_SEC=1800秒=30分）
+# より十分短く（約17.5分）留め、後続の別実行が「まだ実行中」と誤認しないようにする。
+POST_MAX_RETRIES = 6  # 初回 + 6回リトライ = 最大7回試行
+POST_RETRY_BACKOFF_SEC: Tuple[int, ...] = (30, 60, 120, 240, 300, 300)
 
 LOGGER = logging.getLogger("public_report")
 
@@ -631,17 +635,33 @@ def get_x_credentials() -> Optional[Dict[str, str]]:
     return creds
 
 
+def _post_retry_wait_seconds(
+    attempt_index: int,
+    backoff_schedule: Sequence[int] = POST_RETRY_BACKOFF_SEC,
+) -> int:
+    """
+    attempt_index（0始まり、直前に失敗した試行の番号）に対する待機秒数。
+    schedule を使い切ったら最後の値を繰り返す。
+    """
+    if not backoff_schedule:
+        return 0
+    if attempt_index < len(backoff_schedule):
+        return int(backoff_schedule[attempt_index])
+    return int(backoff_schedule[-1])
+
+
 def post_to_x(
     text: str,
     dry_run: bool = False,
     max_retries: int = POST_MAX_RETRIES,
-    retry_interval_sec: int = POST_RETRY_INTERVAL_SEC,
+    retry_backoff_sec: Sequence[int] = POST_RETRY_BACKOFF_SEC,
 ) -> bool:
     """
     X へ1件投稿する。成功時 True。
     - dry_run: API を呼ばず内容をログ出力のみ。
     - 従量課金前提のため呼び出しは最小限。成功レスポンス確認後は再送しない。
     - 送信例外時のみ最大 max_retries までリトライ（多重投稿防止）。
+      間隔は retry_backoff_sec に従った指数バックオフ（X API側の一時的な不調を想定）。
     """
     if dry_run:
         LOGGER.info("DRY-RUN mode. The following text would be posted to X:\n%s", text)
@@ -691,7 +711,8 @@ def post_to_x(
                 last_error,
             )
             if attempt < max_retries:
-                time.sleep(retry_interval_sec)
+                wait_sec = _post_retry_wait_seconds(attempt, retry_backoff_sec)
+                time.sleep(wait_sec)
 
     LOGGER.error("X post failed after %d attempts: %s", max_retries + 1, last_error)
     return False
@@ -703,6 +724,15 @@ def _build_failure_alert(target_date: str, detail: str) -> str:
         f"target_date={target_date}\n"
         f"detail={detail}"
     )
+
+
+def _build_sns_fallback_message(text: str) -> str:
+    """
+    X投稿が全リトライ失敗した際、投稿予定だった本文をSNS用Botへ退避する。
+    手動投稿の判断ができるよう、状況を示す一言を先頭に付ける
+    （プロジェクトのログ/通知は絵文字禁止のため [ALERT] タグを使用）。
+    """
+    return "[ALERT] X自動投稿が失敗しました。手動投稿を検討してください。\n\n" f"{text}"
 
 
 def posted_marker_path(
@@ -805,6 +835,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
     except Exception as exc:
         LOGGER.warning("Telegram alert failed: %s", exc)
+
+    # X投稿の本文が失われないよう、SNS用Botへ本文そのものを退避する（内部アラートに追加）。
+    try:
+        sns_sent = send_sns_telegram_message(_build_sns_fallback_message(text))
+        if sns_sent:
+            LOGGER.info(
+                "Fallback report text sent to SNS Telegram bot for manual posting."
+            )
+        else:
+            LOGGER.warning("Failed to send fallback report text to SNS Telegram bot.")
+    except Exception as exc:
+        LOGGER.warning("SNS Telegram fallback failed: %s", exc)
     return 1
 
 

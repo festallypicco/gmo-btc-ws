@@ -391,6 +391,58 @@ def test_post_to_x_missing_credentials_returns_false(
     assert bpr.post_to_x("hello", dry_run=False) is False
 
 
+def test_post_to_x_retries_with_backoff_schedule_and_logs_format(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """全試行失敗時、既存ログ形式を保ったまま backoff schedule 通りに待機すること。"""
+    monkeypatch.setattr(bpr, "ENV_PATH", tmp_path / "nonexistent.env")
+    monkeypatch.setenv("X_API_KEY", "k")
+    monkeypatch.setenv("X_API_SECRET", "s")
+    monkeypatch.setenv("X_ACCESS_TOKEN", "t")
+    monkeypatch.setenv("X_ACCESS_TOKEN_SECRET", "ts")
+
+    import tweepy  # type: ignore
+
+    class _FakeClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def create_tweet(self, text: str) -> object:
+            raise RuntimeError("401 Unauthorized")
+
+    monkeypatch.setattr(tweepy, "Client", _FakeClient)
+
+    sleep_calls: list[int] = []
+    monkeypatch.setattr(bpr.time, "sleep", lambda sec: sleep_calls.append(sec))
+
+    with caplog.at_level("WARNING", logger="public_report"):
+        result = bpr.post_to_x(
+            "hello",
+            dry_run=False,
+            max_retries=3,
+            retry_backoff_sec=(10, 20, 40),
+        )
+
+    assert result is False
+    assert sleep_calls == [10, 20, 40]
+
+    warning_messages = [
+        rec.getMessage() for rec in caplog.records if rec.levelname == "WARNING"
+    ]
+    assert len(warning_messages) == 4  # max_retries=3 -> 4 attempts
+    assert "X post attempt 1/4 failed" in warning_messages[0]
+    assert "X post attempt 4/4 failed" in warning_messages[3]
+    for message in warning_messages:
+        assert "401 Unauthorized" in message
+
+
+def test_post_retry_wait_seconds_repeats_last_value_past_schedule_end() -> None:
+    schedule = (30, 60, 120)
+    assert bpr._post_retry_wait_seconds(0, schedule) == 30
+    assert bpr._post_retry_wait_seconds(2, schedule) == 120
+    assert bpr._post_retry_wait_seconds(5, schedule) == 120  # schedule 尽きたら最後を繰り返す
+
+
 def test_get_x_credentials_reads_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(bpr, "ENV_PATH", tmp_path / "nonexistent.env")
     monkeypatch.setenv("X_API_KEY", "k")
@@ -469,6 +521,66 @@ def test_main_writes_marker_after_successful_post(
     monkeypatch.setattr(bpr, "post_to_x", lambda text, dry_run=False: True)
 
     assert bpr.main([]) == 0
+    assert bpr.already_posted("2026-07-21", runtime_dir=runtime) is True
+
+
+def test_main_sends_sns_fallback_text_when_x_post_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """全リトライ失敗時、本文をSNS用Botへ退避し、既存の内部Telegram通知も維持する。"""
+    runtime = tmp_path / "runtime"
+    monkeypatch.setattr(bpr, "RUNTIME_DIR", runtime)
+    monkeypatch.setattr(
+        bpr,
+        "collect_public_metrics",
+        lambda: ("2026-07-21", _allowed_public_stub()),
+    )
+    monkeypatch.setattr(bpr, "post_to_x", lambda text, dry_run=False: False)
+
+    internal_alerts: list[str] = []
+    sns_messages: list[str] = []
+    monkeypatch.setattr(
+        bpr, "send_telegram_message", lambda text: internal_alerts.append(text) or True
+    )
+    monkeypatch.setattr(
+        bpr, "send_sns_telegram_message", lambda text: sns_messages.append(text) or True
+    )
+
+    exit_code = bpr.main([])
+
+    assert exit_code == 1
+    # 既存の内部アラートは維持（置き換えではなく追加であること）
+    assert len(internal_alerts) == 1
+    assert "X post failed" in internal_alerts[0]
+    # SNS用Botへ本文そのものが1回だけ退避される
+    assert len(sns_messages) == 1
+    assert "手動投稿" in sns_messages[0]
+    assert "BTC自動売買 日次レポート (2026-07-21)" in sns_messages[0]
+    assert bpr.already_posted("2026-07-21", runtime_dir=runtime) is False
+
+
+def test_main_does_not_send_sns_fallback_when_x_post_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """X投稿成功時はSNSフォールバックを送らない（成功時の挙動は変更しない）。"""
+    runtime = tmp_path / "runtime"
+    monkeypatch.setattr(bpr, "RUNTIME_DIR", runtime)
+    monkeypatch.setattr(
+        bpr,
+        "collect_public_metrics",
+        lambda: ("2026-07-21", _allowed_public_stub()),
+    )
+    monkeypatch.setattr(bpr, "post_to_x", lambda text, dry_run=False: True)
+
+    sns_messages: list[str] = []
+    monkeypatch.setattr(
+        bpr, "send_sns_telegram_message", lambda text: sns_messages.append(text) or True
+    )
+
+    exit_code = bpr.main([])
+
+    assert exit_code == 0
+    assert sns_messages == []
     assert bpr.already_posted("2026-07-21", runtime_dir=runtime) is True
 
 
