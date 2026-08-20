@@ -554,6 +554,31 @@ def build_report_message(
     return "\n".join(lines)
 
 
+def _last_recorded_trading_day(history_path: Path) -> Optional[str]:
+    """daily_history.jsonl の最終非空行の trading_day を返す。無ければ None。"""
+    if not history_path.exists():
+        return None
+    try:
+        lines = history_path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        LOGGER.warning("failed to read daily_history.jsonl for duplicate check: %s", exc)
+        return None
+    for raw in reversed(lines):
+        text = raw.strip()
+        if not text:
+            continue
+        try:
+            row = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        day = str(row.get("trading_day") or "").strip()
+        if day:
+            return day
+    return None
+
+
 def append_daily_history(
     db_path: Path = LIVE_STATE_DB_PATH,
     log_dir: Path = LOG_DIR,
@@ -561,8 +586,19 @@ def append_daily_history(
 ) -> None:
     """
     日次レポートと同じ集計結果を log/daily_history.jsonl へ1行追記する。
+    最終行と同じ trading_day なら追記をスキップする（ロールオーバー遅延時の重複防止）。
     """
     target_date, daily_pnl = get_target_trading_day(db_path=db_path)
+    last_day = _last_recorded_trading_day(history_path)
+    if last_day is not None and last_day == target_date:
+        LOGGER.warning(
+            "duplicate trading_day detected in daily_history.jsonl, skipping append: "
+            "target_date=%s already recorded. Possible daily rollover delay - investigate "
+            "trading_day_date update timing.",
+            target_date,
+        )
+        return
+
     total, wins = count_settlements(target_date, log_dir=log_dir)
     losses = total - wins
     jpy_balance = _load_jpy_balance(db_path=db_path)

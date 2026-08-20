@@ -336,6 +336,96 @@ def test_append_daily_history(tmp_path: Path) -> None:
     assert row["total_assets_eod"] == 51_234.0
 
 
+def test_append_daily_history_skips_when_last_trading_day_matches(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """最終行と同じ trading_day なら追記せず行数が増えない。"""
+    db_path = tmp_path / "live_state.db"
+    log_dir = tmp_path / "log"
+    history_path = tmp_path / "log" / "daily_history.jsonl"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    history_path.write_text(
+        json.dumps(
+            {
+                "trading_day": "2026-08-19",
+                "settlements": 97,
+                "wins": 43,
+                "losses": 54,
+                "realized_pnl": -86.4,
+                "jpy_balance": 53940.0,
+                "total_assets_eod": 53940.0,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_live_state(db_path, "2026-08-19", -309.0, jpy_balance=53602.0)
+    _write_csv(log_dir / "realtime_trading_log_2026-08-19.csv", [])
+
+    with caplog.at_level("WARNING", logger="daily_report"):
+        append_daily_history(
+            db_path=db_path, log_dir=log_dir, history_path=history_path
+        )
+
+    lines = history_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    row = json.loads(lines[0])
+    assert row["realized_pnl"] == -86.4
+    assert any(
+        "duplicate trading_day detected" in rec.getMessage()
+        and "target_date=2026-08-19" in rec.getMessage()
+        for rec in caplog.records
+    )
+
+
+def test_append_daily_history_appends_when_trading_day_differs(
+    tmp_path: Path,
+) -> None:
+    """最終行と異なる trading_day なら従来通り追記する。"""
+    db_path = tmp_path / "live_state.db"
+    log_dir = tmp_path / "log"
+    history_path = tmp_path / "log" / "daily_history.jsonl"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    history_path.write_text(
+        json.dumps(
+            {
+                "trading_day": "2026-08-18",
+                "settlements": 1,
+                "wins": 0,
+                "losses": 1,
+                "realized_pnl": -10.0,
+                "jpy_balance": 54000.0,
+                "total_assets_eod": 54000.0,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_live_state(db_path, "2026-08-19", -86.4, jpy_balance=53940.0)
+    _write_csv(
+        log_dir / "realtime_trading_log_2026-08-19.csv",
+        [
+            {
+                "timestamp": "2026-08-19 10:00:00",
+                "reason": "STOP_LOSS",
+                "pnl": "-50",
+            },
+        ],
+    )
+
+    append_daily_history(
+        db_path=db_path, log_dir=log_dir, history_path=history_path
+    )
+
+    lines = history_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+    assert json.loads(lines[0])["trading_day"] == "2026-08-18"
+    assert json.loads(lines[1])["trading_day"] == "2026-08-19"
+    assert json.loads(lines[1])["realized_pnl"] == -86.4
+
+
 def test_append_daily_history_records_total_assets_eod_with_open_long(tmp_path: Path) -> None:
     db_path = tmp_path / "runtime" / "live_state.db"
     log_dir = tmp_path / "log"
