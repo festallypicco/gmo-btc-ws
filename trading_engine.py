@@ -55,6 +55,7 @@ from profile_config import validate_profiles  # noqa: E402
 from portfolio_metrics import compute_total_assets  # noqa: E402
 from virtual_trader import (  # noqa: E402
     VirtualTrader,
+    calc_trading_day_date,
     run_reconciliation_check,
 )
 from websocket_manager import PrivateWebSocketManager, WebSocketManager  # noqa: E402
@@ -854,6 +855,37 @@ def _print_startup_position(trader: VirtualTrader) -> None:
             )
 
 
+def _maybe_rollover_trading_day(trader: VirtualTrader) -> None:
+    """
+    実時刻の取引日とメモリ上の trading_day_date が異なれば日次カウンタをリセットする。
+    engine-restart が SKIP/遅延しても 06:00 跨ぎでロールオーバーできるようにする。
+    同一取引日なら no-op（二重リセット防止）。
+    """
+    current_day = calc_trading_day_date()
+    with trader._lock:
+        if trader.trading_day_date == current_day:
+            return
+        previous_day = trader.trading_day_date
+        # initialize 内の calc と揃えるため、確定した current_day の正午を now に渡す
+        year, month, day = (int(part) for part in current_day.split("-"))
+        now_for_cycle = datetime(year, month, day, 12, 0, 0)
+        # 新サイクル相当: 旧メモリ値は渡さず、リセット後の値を persisted_* に渡す
+        trader.initialize_daily_loss_state(
+            persisted_trading_day_date=current_day,
+            persisted_daily_start_balance=float(trader.jpy_balance),
+            persisted_daily_realized_pnl=0.0,
+            persisted_daily_win_count=0,
+            persisted_daily_loss_count=0,
+            now=now_for_cycle,
+        )
+        new_day = trader.trading_day_date
+        new_start = trader.daily_start_balance
+    print(
+        f"[Engine] trading day rollover: {previous_day} -> {new_day}"
+        f" daily_start_balance={new_start:.0f} daily_realized_pnl reset to 0"
+    )
+
+
 def _maintenance_settings_from_payload(payload: Dict[str, Any]) -> tuple[str, int]:
     raw_action = str(payload.get("maintenance_pre_action", "close")).strip().lower()
     action = raw_action if raw_action in {"wait", "close"} else "close"
@@ -1051,6 +1083,8 @@ def main() -> None:
         while not shutdown_event.is_set():
             time.sleep(1)
 
+            _maybe_rollover_trading_day(trader)
+
             now_ts = time.time()
             if now_ts >= next_reconciliation_ts:
                 try:
@@ -1108,6 +1142,7 @@ def main() -> None:
             resumed = False
             while not shutdown_event.is_set():
                 time.sleep(MANUAL_STOP_PAUSE_POLL_SEC)
+                _maybe_rollover_trading_day(trader)
                 trader.engine_status = "PAUSED"
                 try:
                     _write_live_state(trader, ws_manager)
