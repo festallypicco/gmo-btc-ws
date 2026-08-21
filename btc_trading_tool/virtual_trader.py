@@ -177,7 +177,10 @@ _RECONCILIATION_DEFAULT_TOLERANCE_JPY = 100.0
 # 異常検知の時間あたり損失閾値 (3000円) に揃え、黙って数万円消える事態を防ぐ。
 ACCOUNT_INTEGRITY_TOLERANCE_JPY = 3_000.0
 # imbalance CANCEL 直後の再 ENTRY 抑制（秒・同一方向）。config.json には出さない固定値。
-ENTRY_COOLDOWN_AFTER_CANCEL_SEC = 5
+# 経緯: 2026-07-14 に 2 秒で導入、07-15 に 3 秒、その後 5 秒へ延長。
+# 2026-08-20 の相場急変時に 5〜10 秒帯の同一方向再エントリーと反対側切替が重なり
+# order_rate_limit が頻発したため、2026-08-22 に 5→10 秒へ変更（ANY_SIDE / TIMEOUT は据え置き）。
+ENTRY_COOLDOWN_AFTER_CANCEL_SEC = 10
 # imbalance CANCEL 直後の再 ENTRY 抑制（秒・方向不問）。同一方向クールダウンとは別枠。
 ENTRY_COOLDOWN_AFTER_IMBALANCE_CANCEL_ANY_SIDE_SEC = 1.5
 # imbalance 反転キャンセルのデバウンス（秒）。反転側がこの時間連続したときのみキャンセル。
