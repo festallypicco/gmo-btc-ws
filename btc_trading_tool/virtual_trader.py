@@ -187,6 +187,10 @@ ENTRY_COOLDOWN_AFTER_IMBALANCE_CANCEL_ANY_SIDE_SEC = 1.5
 IMBALANCE_REVERSAL_DEBOUNCE_SEC = 1.5
 # 時間/乖離タイムアウトキャンセル後の再 ENTRY 抑制（秒・同一方向かつ同一価格）。上記とは独立。
 ENTRY_COOLDOWN_AFTER_TIMEOUT_CANCEL_SEC = 300
+# キャンセル API 成功(accepted)後、executionEvents を拾う猶予（秒）。
+# 2026-08-27: cancel accepted とほぼ同時に約定し、pending 解除後の通知が破棄されて
+# GMO 建玉が内部から消える事象への対策。config.json には出さない固定値。
+ENTRY_CANCEL_FILL_GRACE_SEC = 5.0
 # 未約定エントリー指値の経過時間タイムアウト（分）。プロファイル単位・AI夜間調整対象外。
 ENTRY_PENDING_TIMEOUT_MINUTES_DEFAULT = 60.0
 ENTRY_PENDING_TIMEOUT_MINUTES_BY_PROFILE: Dict[str, float] = {
@@ -373,6 +377,12 @@ class VirtualTrader:
         # 板TP経路のみ: 実約定価格取得の連続失敗回数（他決済経路では触らない）。永続化しない。
         self._board_tp_fill_fetch_fail_streak: int = 0
         self._board_tp_fill_fetch_last_fail_reason: str = ""
+        # キャンセル accepted 直後の約定通知猶予。
+        # order_id -> (expires_at, side, entry_price, size, context, locked_profile_name)
+        # 永続化しない（プロセス再起動でリセット。TTL は数秒）。
+        self._cancel_fill_grace_by_order_id: Dict[
+            int, Tuple[float, str, float, float, str, Optional[str]]
+        ] = {}
 
         # KPI カウンタ（trade_history の maxlen 制限を受けない全履歴集計）
         self._win_count:       int   = 0
@@ -679,6 +689,7 @@ class VirtualTrader:
     def _apply_entry_execution_unlocked(self, evt: Dict[str, Any]) -> None:
         pos = self.position
         if pos.entry_order_id is None or not pos.is_pending or pos.side is None:
+            self._apply_post_cancel_grace_fill_unlocked(evt)
             return
 
         raw_order_id = evt.get("orderId")
@@ -689,6 +700,8 @@ class VirtualTrader:
         except (TypeError, ValueError):
             return
         if order_id != int(pos.entry_order_id):
+            # 別注文の約定。現行 pending は触らず、キャンセル猶予だけ見る。
+            self._apply_post_cancel_grace_fill_unlocked(evt)
             return
 
         try:
@@ -776,6 +789,7 @@ class VirtualTrader:
             return
         with self._lock:
             self._latest_orderbook_snap = snap
+            self._prune_cancel_fill_grace_unlocked()
             now = datetime.now()
             self._update_maintenance_state(snap, now)
             entry_blocked = self._is_entry_blocked(now)
@@ -2731,6 +2745,13 @@ class VirtualTrader:
                 f"[{ts}] [OK] real entry cancel accepted:"
                 f" orderId={order_id} context={context}"
             )
+            self._register_cancel_fill_grace_unlocked(
+                order_id,
+                side=str(pos.side or ""),
+                entry_price=float(pos.entry_price),
+                size=float(pos.size),
+                context=str(context),
+            )
             return "proceed_cancel"
         except GmoApiError as exc:
             if not is_benign_cancel_error(exc):
@@ -2841,6 +2862,114 @@ class VirtualTrader:
                 self._safe_console_print(
                     f"[WARN] critical alert notify failed: {alert_exc}"
                 )
+        self._place_real_tp_sl_orders()
+
+    def _register_cancel_fill_grace_unlocked(
+        self,
+        order_id: int,
+        *,
+        side: str,
+        entry_price: float,
+        size: float,
+        context: str,
+    ) -> None:
+        """キャンセル accepted 後、TTL 内の executionEvents を拾うために記録する。"""
+        self._prune_cancel_fill_grace_unlocked()
+        side_norm = str(side or "").upper()
+        if side_norm not in {"LONG", "SHORT"}:
+            return
+        self._cancel_fill_grace_by_order_id[int(order_id)] = (
+            time.time() + float(ENTRY_CANCEL_FILL_GRACE_SEC),
+            side_norm,
+            float(entry_price),
+            float(size),
+            str(context),
+            self._locked_profile_name,
+        )
+
+    def _prune_cancel_fill_grace_unlocked(self) -> None:
+        """TTL 切れのキャンセル猶予エントリを削除する。"""
+        now_ts = time.time()
+        expired = [
+            oid
+            for oid, rec in self._cancel_fill_grace_by_order_id.items()
+            if float(rec[0]) <= now_ts
+        ]
+        for oid in expired:
+            self._cancel_fill_grace_by_order_id.pop(oid, None)
+
+    def _apply_post_cancel_grace_fill_unlocked(self, evt: Dict[str, Any]) -> None:
+        """
+        pending 解除後 TTL 内に届いた、キャンセル済み entry_order_id の約定を採用する。
+        ERR-5122 の adopted_fill とは別経路。通常の pending 約定処理は呼ばない。
+        """
+        self._prune_cancel_fill_grace_unlocked()
+        order_id = self._parse_execution_order_id(evt)
+        if order_id is None:
+            return
+        rec = self._cancel_fill_grace_by_order_id.get(order_id)
+        if rec is None:
+            return
+        expires_at, side, fallback_price, fallback_size, context, locked_profile_name = rec
+        if time.time() >= float(expires_at):
+            self._cancel_fill_grace_by_order_id.pop(order_id, None)
+            return
+
+        fill_price, fill_size = self._parse_execution_fill(
+            evt,
+            default_price=float(fallback_price),
+            default_size=float(fallback_size),
+        )
+        if fill_price <= 0 or fill_size <= 0:
+            return
+
+        position_id = self._parse_optional_order_id(evt.get("positionId"))
+        pos = self.position
+        if pos.side is not None:
+            self._cancel_fill_grace_by_order_id.pop(order_id, None)
+            self._emit_critical_alert(
+                "[ALERT] post-cancel grace window fill ignored; "
+                "internal position already set\n"
+                f"context={context}\n"
+                f"orderId={order_id}\n"
+                f"grace_side={side}\n"
+                f"current_side={pos.side}\n"
+                f"current_pending={pos.is_pending}\n"
+                f"current_entry_order_id={pos.entry_order_id}\n"
+                f"positionId={position_id}"
+            )
+            return
+
+        self._cancel_fill_grace_by_order_id.pop(order_id, None)
+        self._lock_profile_for_restored_position(locked_profile_name)
+        cfg = self.config
+        tp_price = (
+            fill_price * (1 + cfg.take_profit_pct)
+            if side == "LONG"
+            else fill_price * (1 - cfg.take_profit_pct)
+        )
+        self._position_filled_at = datetime.now()
+        self._pending_order_placed_at = None
+        self.position = PositionState(
+            side=side,
+            entry_price=fill_price,
+            size=fill_size,
+            is_pending=False,
+            exit_price_target=tp_price,
+            entry_order_id=order_id,
+            tp_order_id=None,
+            sl_order_id=None,
+            position_id=position_id,
+        )
+        self._emit_critical_alert(
+            "[ALERT] adopted open position (post-cancel grace window fill)\n"
+            f"context={context}\n"
+            f"orderId={order_id}\n"
+            f"side={side}\n"
+            f"entry_price={fill_price:,.0f}\n"
+            f"size={fill_size:.4f}\n"
+            f"positionId={position_id}"
+        )
         self._place_real_tp_sl_orders()
 
     def _cancel_order(
