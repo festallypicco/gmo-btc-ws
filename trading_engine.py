@@ -855,6 +855,15 @@ def _print_startup_position(trader: VirtualTrader) -> None:
             )
 
 
+def _maybe_run_sl_missing_watchdog(trader: VirtualTrader) -> None:
+    """
+    real mode の SL 欠落ウォッチドッグ。
+    通常ループ / PAUSED ループの両方から呼ぶ（待機は lock 外の sleep 周期で表現）。
+    """
+    with trader._lock:
+        trader._maybe_protect_missing_sl_unlocked()
+
+
 def _maybe_rollover_trading_day(trader: VirtualTrader) -> None:
     """
     実時刻の取引日とメモリ上の trading_day_date が異なれば日次カウンタをリセットする。
@@ -1084,6 +1093,7 @@ def main() -> None:
             time.sleep(1)
 
             _maybe_rollover_trading_day(trader)
+            _maybe_run_sl_missing_watchdog(trader)
 
             now_ts = time.time()
             if now_ts >= next_reconciliation_ts:
@@ -1143,6 +1153,7 @@ def main() -> None:
             while not shutdown_event.is_set():
                 time.sleep(MANUAL_STOP_PAUSE_POLL_SEC)
                 _maybe_rollover_trading_day(trader)
+                _maybe_run_sl_missing_watchdog(trader)
                 trader.engine_status = "PAUSED"
                 try:
                     _write_live_state(trader, ws_manager)

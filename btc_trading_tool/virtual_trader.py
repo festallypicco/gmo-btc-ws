@@ -236,6 +236,14 @@ _FILL_FETCH_REASON_LABELS = {
     _FILL_FETCH_REASON_FEE: "手数料欠損",
     _FILL_FETCH_REASON_PRICE_AND_FEE: "価格欠損",
 }
+# real mode SL欠落ウォッチドッグ（config.json / AI調整の対象外）
+SL_MISSING_RETRY_INTERVAL_SEC = 2.0
+SL_MISSING_MAX_ATTEMPTS = 3
+SL_MISSING_FORCE_CLOSE_AFTER_SEC = 10.0
+SL_MISSING_MAINTENANCE_RETRY_INTERVAL_SEC = 10.0
+SL_MISSING_CLOSE_RETRY_INTERVAL_SEC = 3.0
+SL_MISSING_CLOSE_MAX_ATTEMPTS = 5
+_SL_MISSING_MAINTENANCE_CODES = frozenset({"ERR-5201", "ERR-5202"})
 # ---------------------------------------------------------------------- #
 
 
@@ -383,6 +391,21 @@ class VirtualTrader:
         self._cancel_fill_grace_by_order_id: Dict[
             int, Tuple[float, str, float, float, str, Optional[str]]
         ] = {}
+        # SL欠落ウォッチドッグ（永続化しない。プロセス再起動後は reconcile が初回試行）
+        self._sl_missing_watch_position_id: Optional[int] = None
+        self._sl_missing_first_fail_ts: Optional[float] = None
+        self._sl_missing_last_attempt_ts: Optional[float] = None
+        self._sl_missing_attempts: int = 0
+        self._sl_missing_last_was_maintenance: bool = False
+        self._sl_missing_unprotected_alerted: bool = False
+        self._sl_missing_last_error: Optional[BaseException] = None
+        self._sl_missing_last_error_codes: List[str] = []
+        self._sl_missing_in_force_close: bool = False
+        self._sl_missing_close_attempts: int = 0
+        self._sl_missing_last_close_ts: Optional[float] = None
+        self._sl_missing_close_critical_sent: bool = False
+        self._sl_close_order_ok_count: int = 0
+        self._sl_close_order_ng_count: int = 0
 
         # KPI カウンタ（trade_history の maxlen 制限を受けない全履歴集計）
         self._win_count:       int   = 0
@@ -1084,6 +1107,8 @@ class VirtualTrader:
         cfg = self.config
 
         if self.trading_mode == "real":
+            if self._sl_missing_in_force_close:
+                return
             if pos.side == "LONG":
                 if pos.exit_price_target > 0 and snap.best_bid_price >= pos.exit_price_target:
                     self._execute_real_board_take_profit_unlocked(snap)
@@ -2322,6 +2347,299 @@ class VirtualTrader:
             profile_name=resolved_profile_name,
         )
 
+    def _compute_sl_price(self) -> Optional[float]:
+        pos = self.position
+        if pos.side is None:
+            return None
+        entry = float(pos.entry_price)
+        sl_pct = float(self.config.stop_loss_pct)
+        if pos.side == "LONG":
+            return entry * (1 - sl_pct)
+        return entry * (1 + sl_pct)
+
+    def _sl_exit_side(self) -> Optional[str]:
+        pos = self.position
+        if pos.side == "LONG":
+            return "SELL"
+        if pos.side == "SHORT":
+            return "BUY"
+        return None
+
+    def _mark_price_for_sl(self) -> Optional[float]:
+        """SL越値判定用。LONGはbid、SHORTはask。板が無ければ None。"""
+        snap = self._latest_orderbook_snap
+        if snap is None:
+            return None
+        pos = self.position
+        try:
+            if pos.side == "LONG":
+                px = float(snap.best_bid_price)
+            elif pos.side == "SHORT":
+                px = float(snap.best_ask_price)
+            else:
+                return None
+        except (TypeError, ValueError):
+            return None
+        if px <= 0:
+            return None
+        return px
+
+    def _is_mark_through_sl(self, sl_price: float) -> bool:
+        mark = self._mark_price_for_sl()
+        if mark is None:
+            return False
+        if self.position.side == "SHORT":
+            return mark >= sl_price
+        if self.position.side == "LONG":
+            return mark <= sl_price
+        return False
+
+    def _clear_sl_missing_watchdog(self) -> None:
+        self._sl_missing_watch_position_id = None
+        self._sl_missing_first_fail_ts = None
+        self._sl_missing_last_attempt_ts = None
+        self._sl_missing_attempts = 0
+        self._sl_missing_last_was_maintenance = False
+        self._sl_missing_unprotected_alerted = False
+        self._sl_missing_last_error = None
+        self._sl_missing_last_error_codes = []
+        self._sl_missing_in_force_close = False
+        self._sl_missing_close_attempts = 0
+        self._sl_missing_last_close_ts = None
+        self._sl_missing_close_critical_sent = False
+
+    def _gmo_error_codes(self, exc: BaseException) -> List[str]:
+        if isinstance(exc, GmoApiError):
+            return list(exc.message_codes)
+        return []
+
+    def _is_maintenance_sl_error(self, exc: BaseException) -> bool:
+        codes = self._gmo_error_codes(exc)
+        return any(code in _SL_MISSING_MAINTENANCE_CODES for code in codes)
+
+    def _fill_to_sl_ms(self) -> Optional[float]:
+        filled_at = self._position_filled_at
+        if filled_at is None:
+            return None
+        return (datetime.now() - filled_at).total_seconds() * 1000.0
+
+    def _log_sl_close_order_failure(
+        self,
+        *,
+        request_body: Dict[str, Any],
+        sl_error: BaseException,
+        entry_price: float,
+    ) -> None:
+        snap = self._latest_orderbook_snap
+        bid: Any = None
+        ask: Any = None
+        if snap is not None:
+            bid = snap.best_bid_price
+            ask = snap.best_ask_price
+        if isinstance(sl_error, GmoApiError):
+            response: Any = sl_error.messages
+        else:
+            response = str(sl_error)
+        fill_ms = self._fill_to_sl_ms()
+        ts = datetime.now().strftime("%H:%M:%S")
+        self._safe_console_print(
+            f"[{ts}] [WARN] [REAL-SL] closeOrder failed"
+            f" request={request_body}"
+            f" timeInForce=None"
+            f" entry_price={entry_price}"
+            f" fill_to_sl_ms={fill_ms}"
+            f" bid={bid} ask={ask}"
+            f" response={response}"
+            f" sl_api_ok={self._sl_close_order_ok_count}"
+            f" sl_api_ng={self._sl_close_order_ng_count}"
+        )
+
+    def _note_sl_placement_failure(
+        self,
+        sl_error: BaseException,
+        *,
+        now_ts: float,
+        position_id: Optional[int],
+    ) -> None:
+        if (
+            position_id is not None
+            and self._sl_missing_watch_position_id not in {None, position_id}
+        ):
+            self._clear_sl_missing_watchdog()
+        self._sl_missing_watch_position_id = position_id
+        self._sl_missing_last_error = sl_error
+        self._sl_missing_last_error_codes = self._gmo_error_codes(sl_error)
+        self._sl_missing_last_attempt_ts = now_ts
+        if self._is_maintenance_sl_error(sl_error):
+            self._sl_missing_last_was_maintenance = True
+            return
+        self._sl_missing_last_was_maintenance = False
+        if self._sl_missing_first_fail_ts is None:
+            self._sl_missing_first_fail_ts = now_ts
+        self._sl_missing_attempts += 1
+
+    def _emit_unprotected_sl_alert(
+        self,
+        *,
+        side: Optional[str],
+        entry_price: float,
+        size: float,
+        position_id: Optional[int],
+        sl_error: BaseException,
+    ) -> None:
+        if self._sl_missing_unprotected_alerted:
+            return
+        self._sl_missing_unprotected_alerted = True
+        message = (
+            "[ALERT] real SL placement failed (unprotected position)\n"
+            f"detail=SL closeOrder(STOP) placement failed\n"
+            f"side={side}\n"
+            f"entry_price={entry_price:,.0f}\n"
+            f"size={size:.4f}\n"
+            f"position_id={position_id}\n"
+            f"sl_order_id=None\n"
+            f"sl_error={sl_error}"
+        )
+        self._emit_critical_alert(message)
+
+    def _emit_sl_missing_force_close_alert(self, *, now_ts: float) -> None:
+        pos = self.position
+        first_ts = self._sl_missing_first_fail_ts
+        elapsed = 0.0 if first_ts is None else max(0.0, now_ts - first_ts)
+        codes = self._sl_missing_last_error_codes
+        last_code = codes[0] if codes else "none"
+        message = (
+            "[ALERT] SL missing watchdog: force closing position\n"
+            f"position_id={pos.position_id}\n"
+            f"side={pos.side}\n"
+            f"elapsed_sec={elapsed}\n"
+            f"attempts={self._sl_missing_attempts}\n"
+            f"last_error_code={last_code}"
+        )
+        self._emit_critical_alert(message)
+
+    def _start_sl_missing_force_close_unlocked(self, now_ts: float) -> None:
+        if self._sl_missing_in_force_close:
+            self._run_sl_missing_force_close_unlocked(now_ts)
+            return
+        self._sl_missing_in_force_close = True
+        self._sl_missing_close_attempts = 0
+        self._sl_missing_last_close_ts = None
+        self._sl_missing_close_critical_sent = False
+        self._emit_sl_missing_force_close_alert(now_ts=now_ts)
+        self._run_sl_missing_force_close_unlocked(now_ts)
+
+    def _run_sl_missing_force_close_unlocked(self, now_ts: float) -> None:
+        last_close = self._sl_missing_last_close_ts
+        if (
+            last_close is not None
+            and (now_ts - last_close) < SL_MISSING_CLOSE_RETRY_INTERVAL_SEC
+        ):
+            return
+        self._sl_missing_last_close_ts = now_ts
+        self._sl_missing_close_attempts += 1
+        snap = self._snapshot_for_logging()
+        closed = self._force_close_real(
+            snap,
+            ignore_cooldown=True,
+            emit_critical_on_fail=False,
+        )
+        if closed or self.position.side is None:
+            self._clear_sl_missing_watchdog()
+            return
+        if (
+            self._sl_missing_close_attempts >= SL_MISSING_CLOSE_MAX_ATTEMPTS
+            and not self._sl_missing_close_critical_sent
+        ):
+            self._sl_missing_close_critical_sent = True
+            pos = self.position
+            last_error = self._sl_missing_last_error
+            self._emit_critical_alert(
+                "[CRITICAL] SL missing watchdog: market close still failing\n"
+                f"position_id={pos.position_id}\n"
+                f"side={pos.side}\n"
+                f"close_attempts={self._sl_missing_close_attempts}\n"
+                f"last_error={last_error}"
+            )
+
+    def _maybe_protect_missing_sl_unlocked(
+        self,
+        now_ts: Optional[float] = None,
+    ) -> None:
+        """
+        SL欠落ウォッチドッグ。呼び出し元が lock を保持すること。
+        待機は sleep せず、now_ts と前回時刻の比較だけで間隔を表現する。
+        """
+        if self.trading_mode != "real":
+            return
+        now = time.time() if now_ts is None else float(now_ts)
+        pos = self.position
+        if pos.side is None:
+            self._clear_sl_missing_watchdog()
+            return
+        if pos.is_pending or pos.position_id is None:
+            return
+        if pos.sl_order_id is not None:
+            self._clear_sl_missing_watchdog()
+            return
+
+        if self._sl_missing_in_force_close:
+            self._run_sl_missing_force_close_unlocked(now)
+            return
+
+        sl_price = self._compute_sl_price()
+        if sl_price is not None and self._is_mark_through_sl(sl_price):
+            self._start_sl_missing_force_close_unlocked(now)
+            return
+
+        if self._sl_missing_first_fail_ts is not None:
+            elapsed = now - self._sl_missing_first_fail_ts
+            if (
+                self._sl_missing_attempts >= SL_MISSING_MAX_ATTEMPTS
+                or elapsed >= SL_MISSING_FORCE_CLOSE_AFTER_SEC
+            ):
+                self._start_sl_missing_force_close_unlocked(now)
+                return
+
+        last_attempt = self._sl_missing_last_attempt_ts
+        if last_attempt is None:
+            self._place_real_tp_sl_orders()
+            if (
+                self.position.sl_order_id is None
+                and self.position.side is not None
+                and not self._sl_missing_in_force_close
+                and self._sl_missing_first_fail_ts is not None
+                and (
+                    self._sl_missing_attempts >= SL_MISSING_MAX_ATTEMPTS
+                    or (now - self._sl_missing_first_fail_ts)
+                    >= SL_MISSING_FORCE_CLOSE_AFTER_SEC
+                )
+            ):
+                self._start_sl_missing_force_close_unlocked(now)
+            return
+
+        interval = (
+            SL_MISSING_MAINTENANCE_RETRY_INTERVAL_SEC
+            if self._sl_missing_last_was_maintenance
+            else SL_MISSING_RETRY_INTERVAL_SEC
+        )
+        if (now - last_attempt) < interval:
+            return
+
+        self._place_real_tp_sl_orders()
+        if self.position.sl_order_id is not None or self.position.side is None:
+            return
+        if self._sl_missing_in_force_close:
+            return
+        if self._sl_missing_first_fail_ts is None:
+            return
+        elapsed = now - self._sl_missing_first_fail_ts
+        if (
+            self._sl_missing_attempts >= SL_MISSING_MAX_ATTEMPTS
+            or elapsed >= SL_MISSING_FORCE_CLOSE_AFTER_SEC
+        ):
+            self._start_sl_missing_force_close_unlocked(now)
+
     def _place_real_tp_sl_orders(
         self,
         *,
@@ -2356,53 +2674,78 @@ class VirtualTrader:
                 )
             return
 
-        cfg = self.config
         size = float(pos.size)
         entry = float(pos.entry_price)
-        if pos.side == "LONG":
-            exit_side = "SELL"
-            sl_price = entry * (1 - cfg.stop_loss_pct)
-        else:
-            exit_side = "BUY"
-            sl_price = entry * (1 + cfg.stop_loss_pct)
-
+        sl_price = self._compute_sl_price()
+        exit_side = self._sl_exit_side()
         sl_order_id: Optional[int] = None
         sl_error: Optional[BaseException] = None
         ts = datetime.now().strftime("%H:%M:%S")
         position_id = pos.position_id
+        now_ts = time.time()
 
-        if position_id is None:
+        if sl_price is not None and self._is_mark_through_sl(sl_price):
+            self._start_sl_missing_force_close_unlocked(now_ts)
+            return
+
+        if position_id is None or sl_price is None or exit_side is None:
             sl_error = RuntimeError("position_id is None; cannot place SL closeOrder")
             self._safe_console_print(
                 f"[{ts}] [WARN] [REAL-SL] skipped: position_id is None"
             )
-        else:
-            try:
-                # STOP は timeInForce 未指定（API デフォルト FAK）
-                sl_order_id = int(
-                    gmo_close_order(
-                        side=exit_side,
-                        execution_type="STOP",
-                        price=sl_price,
-                        time_in_force=None,
-                        settle_position={
-                            "positionId": int(position_id),
-                            "size": str(size),
-                        },
-                    )
+            self.position = PositionState(
+                side=pos.side,
+                entry_price=pos.entry_price,
+                size=pos.size,
+                is_pending=False,
+                exit_price_target=pos.exit_price_target,
+                entry_order_id=pos.entry_order_id,
+                tp_order_id=None,
+                sl_order_id=None,
+                position_id=pos.position_id,
+            )
+            return
+
+        request_body = _build_close_order_body(
+            side=exit_side,
+            execution_type="STOP",
+            settle_position={
+                "positionId": int(position_id),
+                "size": str(size),
+            },
+            price=sl_price,
+            time_in_force=None,
+        )
+        try:
+            # STOP は timeInForce 未指定（API デフォルト FAK）
+            sl_order_id = int(
+                gmo_close_order(
+                    side=exit_side,
+                    execution_type="STOP",
+                    price=sl_price,
+                    time_in_force=None,
+                    settle_position={
+                        "positionId": int(position_id),
+                        "size": str(size),
+                    },
                 )
-                self._safe_console_print(
-                    f"[{ts}] [OK] [REAL-SL] {pos.side}"
-                    f" orderId={sl_order_id}"
-                    f" side={exit_side} STOP closeOrder @ {sl_price:,.0f}"
-                    f" size={size:.4f}"
-                    f" positionId={position_id}"
-                )
-            except Exception as exc:
-                sl_error = exc
-                self._safe_console_print(
-                    f"[{ts}] [WARN] [REAL-SL] closeOrder failed: {exc}"
-                )
+            )
+            self._sl_close_order_ok_count += 1
+            self._safe_console_print(
+                f"[{ts}] [OK] [REAL-SL] {pos.side}"
+                f" orderId={sl_order_id}"
+                f" side={exit_side} STOP closeOrder @ {sl_price:,.0f}"
+                f" size={size:.4f}"
+                f" positionId={position_id}"
+            )
+        except Exception as exc:
+            sl_error = exc
+            self._sl_close_order_ng_count += 1
+            self._log_sl_close_order_failure(
+                request_body=request_body,
+                sl_error=exc,
+                entry_price=entry,
+            )
 
         self.position = PositionState(
             side=pos.side,
@@ -2417,19 +2760,19 @@ class VirtualTrader:
         )
 
         if sl_error is None:
+            self._clear_sl_missing_watchdog()
             return
 
-        message = (
-            "[ALERT] real SL placement failed (unprotected position)\n"
-            f"detail=SL closeOrder(STOP) placement failed\n"
-            f"side={pos.side}\n"
-            f"entry_price={entry:,.0f}\n"
-            f"size={size:.4f}\n"
-            f"position_id={position_id}\n"
-            f"sl_order_id={sl_order_id}\n"
-            f"sl_error={sl_error}"
+        self._note_sl_placement_failure(
+            sl_error, now_ts=now_ts, position_id=position_id
         )
-        self._emit_critical_alert(message)
+        self._emit_unprotected_sl_alert(
+            side=pos.side,
+            entry_price=entry,
+            size=size,
+            position_id=position_id,
+            sl_error=sl_error,
+        )
 
     def _sync_jpy_balance_from_equity_unlocked(self, *, context: str) -> None:
         """決済成功後: equity_jpy を内部残高へ同期。失敗しても例外は外へ出さない。"""
@@ -3119,14 +3462,21 @@ class VirtualTrader:
             f"  pnl={net_pnl:+,.0f} JPY"
         )
 
-    def _force_close_real(self, snap: OrderbookSnapshot) -> None:
+    def _force_close_real(
+        self,
+        snap: OrderbookSnapshot,
+        *,
+        ignore_cooldown: bool = False,
+        emit_critical_on_fail: bool = True,
+    ) -> bool:
         """
         real mode 緊急停止: TP/SL 注文をキャンセルし、残建玉を成行決済する。
         決済成立確認は REST（closeOrder 応答 + openPositions 再取得）で行う。
+        戻り値: 建玉が消えた（または元から無い）なら True。
         """
         now_ts = time.time()
-        if now_ts < self._force_close_real_cooldown_until:
-            return
+        if not ignore_cooldown and now_ts < self._force_close_real_cooldown_until:
+            return False
 
         pos = self.position
         ts = datetime.now().strftime("%H:%M:%S")
@@ -3179,7 +3529,7 @@ class VirtualTrader:
                     self._pending_order_placed_at = None
                     self._clear_locked_profile()
                     _sync_jpy_balance_from_equity()
-                    return
+                    return True
 
                 # c. 残建玉を closeOrder(MARKET) で決済
                 close_order_ids: List[int] = []
@@ -3249,7 +3599,7 @@ class VirtualTrader:
                     actual_fee=actual_fee,
                 )
                 _sync_jpy_balance_from_equity()
-                return
+                return True
             except Exception as exc:
                 last_error = exc
                 self._safe_console_print(
@@ -3262,27 +3612,29 @@ class VirtualTrader:
 
         # e. 3回失敗: 強い扱いで介入要求
         self._force_close_real_cooldown_until = time.time() + _FORCE_CLOSE_REAL_ALERT_COOLDOWN_SEC
-        message = "\n".join(
-            [
-                "[CRITICAL] REAL MODE FORCE CLOSE FAILED",
-                "manual intervention required immediately",
-                f"attempts={_FORCE_CLOSE_REAL_MAX_ATTEMPTS}",
-                f"error={last_error}",
-                f"tp_order_id={pos.tp_order_id}",
-                f"sl_order_id={pos.sl_order_id}",
-                f"internal_side={pos.side}",
-                f"internal_size={pos.size}",
-                f"next_retry_after_sec={int(_FORCE_CLOSE_REAL_ALERT_COOLDOWN_SEC)}",
-            ]
-        )
-        self._safe_console_print(message)
-        if self._on_critical_alert is not None:
-            try:
-                self._on_critical_alert(message)
-            except Exception as alert_exc:
-                self._safe_console_print(
-                    f"[WARN] critical alert notify failed: {alert_exc}"
-                )
+        if emit_critical_on_fail:
+            message = "\n".join(
+                [
+                    "[CRITICAL] REAL MODE FORCE CLOSE FAILED",
+                    "manual intervention required immediately",
+                    f"attempts={_FORCE_CLOSE_REAL_MAX_ATTEMPTS}",
+                    f"error={last_error}",
+                    f"tp_order_id={pos.tp_order_id}",
+                    f"sl_order_id={pos.sl_order_id}",
+                    f"internal_side={pos.side}",
+                    f"internal_size={pos.size}",
+                    f"next_retry_after_sec={int(_FORCE_CLOSE_REAL_ALERT_COOLDOWN_SEC)}",
+                ]
+            )
+            self._safe_console_print(message)
+            if self._on_critical_alert is not None:
+                try:
+                    self._on_critical_alert(message)
+                except Exception as alert_exc:
+                    self._safe_console_print(
+                        f"[WARN] critical alert notify failed: {alert_exc}"
+                    )
+        return False
 
     # ------------------------------------------------------------------ #
     #  ユーティリティ                                                       #
@@ -3855,7 +4207,7 @@ def gmo_order(
     return str(data)
 
 
-def gmo_close_order(
+def _build_close_order_body(
     *,
     side: str,
     execution_type: str,
@@ -3863,13 +4215,8 @@ def gmo_close_order(
     price: Optional[float] = None,
     time_in_force: Optional[str] = None,
     symbol: str = _GMO_LEVERAGE_SYMBOL,
-) -> str:
-    """
-    POST /v1/closeOrder
-    settle_position: {"positionId": <int>, "size": "<str>"}
-    LIMIT/STOP では price 必須。time_in_force は LIMIT のみ指定可（STOP/MARKET は None）。
-    戻り値: 決済注文 orderId（文字列）
-    """
+) -> Dict[str, Any]:
+    """POST /v1/closeOrder に送るボディ。ログと発注で同じ形を使う。"""
     body: Dict[str, Any] = {
         "symbol": symbol,
         "side": side,
@@ -3885,6 +4232,32 @@ def gmo_close_order(
         body["price"] = str(int(round(float(price))))
     if time_in_force is not None:
         body["timeInForce"] = time_in_force
+    return body
+
+
+def gmo_close_order(
+    *,
+    side: str,
+    execution_type: str,
+    settle_position: Dict[str, Any],
+    price: Optional[float] = None,
+    time_in_force: Optional[str] = None,
+    symbol: str = _GMO_LEVERAGE_SYMBOL,
+) -> str:
+    """
+    POST /v1/closeOrder
+    settle_position: {"positionId": <int>, "size": "<str>"}
+    LIMIT/STOP では price 必須。time_in_force は LIMIT のみ指定可（STOP/MARKET は None）。
+    戻り値: 決済注文 orderId（文字列）
+    """
+    body = _build_close_order_body(
+        side=side,
+        execution_type=execution_type,
+        settle_position=settle_position,
+        price=price,
+        time_in_force=time_in_force,
+        symbol=symbol,
+    )
     data = _gmo_private_request("POST", "/v1/closeOrder", body)
     return str(data)
 
