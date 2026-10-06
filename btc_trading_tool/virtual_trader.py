@@ -406,6 +406,10 @@ class VirtualTrader:
         self._sl_missing_close_critical_sent: bool = False
         self._sl_close_order_ok_count: int = 0
         self._sl_close_order_ng_count: int = 0
+        # SL発注ログ用の試行回数（ログ専用。発注判定には使わない。永続化しない）
+        self._sl_log_attempt_position_id: Optional[int] = None
+        self._sl_log_attempt_count: int = 0
+        self._sl_log_first_attempt_ts: Optional[float] = None
 
         # KPI カウンタ（trade_history の maxlen 制限を受けない全履歴集計）
         self._win_count:       int   = 0
@@ -2454,6 +2458,57 @@ class VirtualTrader:
             f" sl_api_ng={self._sl_close_order_ng_count}"
         )
 
+    def _next_sl_log_attempt(self, position_id: Optional[int]) -> int:
+        if self._sl_log_attempt_position_id != position_id:
+            return 1
+        return self._sl_log_attempt_count + 1
+
+    def _record_sl_log_attempt(
+        self, position_id: Optional[int], now_ts: float
+    ) -> int:
+        attempt = self._next_sl_log_attempt(position_id)
+        if attempt == 1:
+            self._sl_log_attempt_position_id = position_id
+            self._sl_log_first_attempt_ts = now_ts
+        self._sl_log_attempt_count = attempt
+        return attempt
+
+    def _reset_sl_log_attempt(self) -> None:
+        self._sl_log_attempt_position_id = None
+        self._sl_log_attempt_count = 0
+        self._sl_log_first_attempt_ts = None
+
+    def _log_sl_watchdog_retry(self, now_ts: float) -> None:
+        position_id = self.position.position_id
+        attempt = self._next_sl_log_attempt(position_id)
+        first_ts = (
+            self._sl_log_first_attempt_ts
+            if self._sl_log_attempt_position_id == position_id
+            else None
+        )
+        elapsed = 0.0 if first_ts is None else max(0.0, now_ts - first_ts)
+        ts = datetime.now().strftime("%H:%M:%S")
+        self._safe_console_print(
+            f"[{ts}] [SL-WATCHDOG] retry"
+            f" attempt={attempt}"
+            f" elapsed_sec={elapsed:.1f}"
+            f" position_id={position_id}"
+        )
+
+    def _log_sl_watchdog_force_close(self, now_ts: float) -> None:
+        first_ts = self._sl_missing_first_fail_ts
+        elapsed = 0.0 if first_ts is None else max(0.0, now_ts - first_ts)
+        codes = self._sl_missing_last_error_codes
+        last_code = codes[0] if codes else "none"
+        ts = datetime.now().strftime("%H:%M:%S")
+        self._safe_console_print(
+            f"[{ts}] [SL-WATCHDOG] force_close"
+            f" attempt={self._sl_missing_attempts}"
+            f" elapsed_sec={elapsed:.1f}"
+            f" position_id={self.position.position_id}"
+            f" last_error_code={last_code}"
+        )
+
     def _note_sl_placement_failure(
         self,
         sl_error: BaseException,
@@ -2526,6 +2581,7 @@ class VirtualTrader:
         self._sl_missing_close_attempts = 0
         self._sl_missing_last_close_ts = None
         self._sl_missing_close_critical_sent = False
+        self._log_sl_watchdog_force_close(now_ts)
         self._emit_sl_missing_force_close_alert(now_ts=now_ts)
         self._run_sl_missing_force_close_unlocked(now_ts)
 
@@ -2603,6 +2659,7 @@ class VirtualTrader:
 
         last_attempt = self._sl_missing_last_attempt_ts
         if last_attempt is None:
+            self._log_sl_watchdog_retry(now)
             self._place_real_tp_sl_orders()
             if (
                 self.position.sl_order_id is None
@@ -2626,6 +2683,7 @@ class VirtualTrader:
         if (now - last_attempt) < interval:
             return
 
+        self._log_sl_watchdog_retry(now)
         self._place_real_tp_sl_orders()
         if self.position.sl_order_id is not None or self.position.side is None:
             return
@@ -2716,6 +2774,10 @@ class VirtualTrader:
             price=sl_price,
             time_in_force=None,
         )
+        attempt_no = self._record_sl_log_attempt(position_id, now_ts)
+        book = self._latest_orderbook_snap
+        place_bid: Any = None if book is None else book.best_bid_price
+        place_ask: Any = None if book is None else book.best_ask_price
         try:
             # STOP は timeInForce 未指定（API デフォルト FAK）
             sl_order_id = int(
@@ -2737,6 +2799,9 @@ class VirtualTrader:
                 f" side={exit_side} STOP closeOrder @ {sl_price:,.0f}"
                 f" size={size:.4f}"
                 f" positionId={position_id}"
+                f" fill_to_sl_ms={self._fill_to_sl_ms()}"
+                f" attempt={attempt_no}"
+                f" bid={place_bid} ask={place_ask}"
             )
         except Exception as exc:
             sl_error = exc
@@ -2760,6 +2825,7 @@ class VirtualTrader:
         )
 
         if sl_error is None:
+            self._reset_sl_log_attempt()
             self._clear_sl_missing_watchdog()
             return
 
