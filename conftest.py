@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -67,6 +68,18 @@ def _assert_snapshots_unchanged(
             raise AssertionError(
                 f"{label}: production file mtime changed during test session: {path}"
             )
+
+
+@pytest.fixture(autouse=True)
+def no_sl_first_attempt_delay(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    WS 約定直後の SL 発注待ち（タイマースレッド）を既定で無効化する。
+    待ちの挙動を検証するテストは SL_FIRST_ATTEMPT_MIN_DELAY_SEC を明示的に設定する。
+    """
+    for name in ("virtual_trader", "btc_trading_tool.virtual_trader"):
+        module = sys.modules.get(name)
+        if module is not None and hasattr(module, "SL_FIRST_ATTEMPT_MIN_DELAY_SEC"):
+            monkeypatch.setattr(module, "SL_FIRST_ATTEMPT_MIN_DELAY_SEC", 0.0)
 
 
 @pytest.fixture(scope="session")

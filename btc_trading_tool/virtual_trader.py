@@ -244,7 +244,35 @@ SL_MISSING_MAINTENANCE_RETRY_INTERVAL_SEC = 10.0
 SL_MISSING_CLOSE_RETRY_INTERVAL_SEC = 3.0
 SL_MISSING_CLOSE_MAX_ATTEMPTS = 5
 _SL_MISSING_MAINTENANCE_CODES = frozenset({"ERR-5201", "ERR-5202"})
+# real mode: WS 約定検知から初回 SL 発注までの最小待ち（config.json / AI調整の対象外）
+SL_FIRST_ATTEMPT_MIN_DELAY_SEC = 0.15
 # ---------------------------------------------------------------------- #
+
+
+def _start_daemon_timer(delay_sec: float, fn: Callable[[], None]) -> None:
+    timer = threading.Timer(max(0.0, float(delay_sec)), fn)
+    timer.daemon = True
+    timer.start()
+
+
+def _parse_gmo_timestamp(raw: Any) -> Optional[float]:
+    """GMO の ISO8601 UTC 文字列（例 2019-03-19T02:15:06.081Z）を epoch 秒へ。"""
+    if not isinstance(raw, str) or not raw:
+        return None
+    text = raw.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.timestamp()
+
+
+def _fmt_ms(value: Optional[float]) -> str:
+    return "None" if value is None else f"{value:.1f}"
 
 
 def calc_trading_day_date(now: Optional[datetime] = None) -> str:
@@ -410,6 +438,16 @@ class VirtualTrader:
         self._sl_log_attempt_position_id: Optional[int] = None
         self._sl_log_attempt_count: int = 0
         self._sl_log_first_attempt_ts: Optional[float] = None
+        # WS 約定直後の初回 SL 発注予約（永続化しない）
+        self._sl_first_attempt_due_ts: Optional[float] = None
+        self._sl_first_attempt_position_id: Optional[int] = None
+        self._sl_first_attempt_scheduler: Callable[
+            [float, Callable[[], None]], None
+        ] = _start_daemon_timer
+        # 約定通知の受信時刻と取引所約定時刻の差（診断ログ専用。永続化しない）
+        self._execution_recv_ts: Optional[float] = None
+        self._fill_ws_latency_ms: Optional[float] = None
+        self._fill_ws_latency_position_id: Optional[int] = None
 
         # KPI カウンタ（trade_history の maxlen 制限を受けない全履歴集計）
         self._win_count:       int   = 0
@@ -432,7 +470,9 @@ class VirtualTrader:
         """
         if not isinstance(evt, dict):
             return
+        recv_ts = time.time()
         with self._lock:
+            self._execution_recv_ts = recv_ts
             if self._apply_exit_execution_unlocked(evt):
                 return
             self._apply_entry_execution_unlocked(evt)
@@ -804,7 +844,8 @@ class VirtualTrader:
             f"  size={exec_size:.4f} BTC"
             f"  TP target: {tp_price:,.0f} JPY"
         )
-        self._place_real_tp_sl_orders()
+        self._note_fill_ws_latency_unlocked(evt, position_id)
+        self._place_first_real_sl_after_fill_unlocked()
 
     def on_orderbook_update(self, snap: Optional[OrderbookSnapshot]) -> None:
         """
@@ -2427,12 +2468,118 @@ class VirtualTrader:
             return None
         return (datetime.now() - filled_at).total_seconds() * 1000.0
 
+    def _note_fill_ws_latency_unlocked(
+        self, evt: Dict[str, Any], position_id: Optional[int]
+    ) -> None:
+        exec_ts = _parse_gmo_timestamp(evt.get("executionTimestamp"))
+        recv_ts = self._execution_recv_ts
+        self._fill_ws_latency_position_id = position_id
+        if exec_ts is None or recv_ts is None:
+            self._fill_ws_latency_ms = None
+            return
+        self._fill_ws_latency_ms = (recv_ts - exec_ts) * 1000.0
+
+    def _ws_latency_ms_for_position(self, position_id: Optional[int]) -> Optional[float]:
+        if self._fill_ws_latency_position_id != position_id:
+            return None
+        return self._fill_ws_latency_ms
+
+    def _sl_first_attempt_remaining_sec(self) -> float:
+        filled_at = self._position_filled_at
+        if filled_at is None:
+            return 0.0
+        elapsed = (datetime.now() - filled_at).total_seconds()
+        return SL_FIRST_ATTEMPT_MIN_DELAY_SEC - elapsed
+
+    def _clear_sl_first_attempt_deferral(self) -> None:
+        self._sl_first_attempt_due_ts = None
+        self._sl_first_attempt_position_id = None
+
+    def _place_first_real_sl_after_fill_unlocked(self) -> None:
+        """
+        WS 約定通知直後の初回 SL 発注。呼び出し元が lock を保持すること。
+        約定検知から SL_FIRST_ATTEMPT_MIN_DELAY_SEC 未満なら、lock を保持して
+        待たずにタイマースレッドへ予約する。SL 越えは待たずに既存処理へ渡す。
+        """
+        if self.trading_mode != "real":
+            return
+        pos = self.position
+        remaining = self._sl_first_attempt_remaining_sec()
+        sl_price = self._compute_sl_price()
+        if (
+            remaining <= 0
+            or pos.side is None
+            or pos.is_pending
+            or pos.position_id is None
+            or (sl_price is not None and self._is_mark_through_sl(sl_price))
+        ):
+            self._clear_sl_first_attempt_deferral()
+            self._place_real_tp_sl_orders()
+            return
+        position_id = pos.position_id
+        self._sl_first_attempt_due_ts = time.time() + remaining
+        self._sl_first_attempt_position_id = position_id
+        ts = datetime.now().strftime("%H:%M:%S")
+        self._safe_console_print(
+            f"[{ts}] [OK] [REAL-SL] first attempt deferred"
+            f" wait_ms={remaining * 1000.0:.1f}"
+            f" positionId={position_id}"
+        )
+        try:
+            self._sl_first_attempt_scheduler(
+                remaining, lambda: self._run_deferred_first_sl(position_id)
+            )
+        except Exception as exc:
+            self._safe_console_print(
+                f"[{ts}] [WARN] [REAL-SL] deferred timer start failed;"
+                f" placing now: {exc}"
+            )
+            self._clear_sl_first_attempt_deferral()
+            self._place_real_tp_sl_orders()
+
+    def _run_deferred_first_sl(self, position_id: Optional[int]) -> None:
+        with self._lock:
+            self._place_deferred_first_sl_unlocked(position_id)
+
+    def _place_deferred_first_sl_unlocked(self, position_id: Optional[int]) -> None:
+        if (
+            self._sl_first_attempt_due_ts is None
+            or self._sl_first_attempt_position_id != position_id
+        ):
+            return
+        pos = self.position
+        if (
+            self.trading_mode != "real"
+            or pos.side is None
+            or pos.is_pending
+            or pos.position_id != position_id
+            or pos.sl_order_id is not None
+            or self._sl_missing_in_force_close
+        ):
+            self._clear_sl_first_attempt_deferral()
+            return
+        remaining = self._sl_first_attempt_remaining_sec()
+        if remaining > 0:
+            try:
+                self._sl_first_attempt_scheduler(
+                    remaining, lambda: self._run_deferred_first_sl(position_id)
+                )
+                return
+            except Exception:
+                pass
+        self._clear_sl_first_attempt_deferral()
+        self._place_real_tp_sl_orders()
+
     def _log_sl_close_order_failure(
         self,
         *,
         request_body: Dict[str, Any],
         sl_error: BaseException,
         entry_price: float,
+        attempt: int,
+        send_delay_ms: Optional[float],
+        rtt_ms: Optional[float],
+        ws_latency_ms: Optional[float],
     ) -> None:
         snap = self._latest_orderbook_snap
         bid: Any = None
@@ -2451,7 +2598,11 @@ class VirtualTrader:
             f" request={request_body}"
             f" timeInForce=None"
             f" entry_price={entry_price}"
-            f" fill_to_sl_ms={fill_ms}"
+            f" fill_to_sl_ms={_fmt_ms(fill_ms)}"
+            f" send_delay_ms={_fmt_ms(send_delay_ms)}"
+            f" rtt_ms={_fmt_ms(rtt_ms)}"
+            f" ws_latency_ms={_fmt_ms(ws_latency_ms)}"
+            f" attempt={attempt}"
             f" bid={bid} ask={ask}"
             f" response={response}"
             f" sl_api_ok={self._sl_close_order_ok_count}"
@@ -2648,6 +2799,14 @@ class VirtualTrader:
             self._start_sl_missing_force_close_unlocked(now)
             return
 
+        if self._sl_first_attempt_due_ts is not None:
+            if (
+                self._sl_first_attempt_position_id == pos.position_id
+                and self._sl_first_attempt_remaining_sec() > 0
+            ):
+                return
+            self._clear_sl_first_attempt_deferral()
+
         if self._sl_missing_first_fail_ts is not None:
             elapsed = now - self._sl_missing_first_fail_ts
             if (
@@ -2778,6 +2937,15 @@ class VirtualTrader:
         book = self._latest_orderbook_snap
         place_bid: Any = None if book is None else book.best_bid_price
         place_ask: Any = None if book is None else book.best_ask_price
+        ws_latency_ms = self._ws_latency_ms_for_position(position_id)
+        filled_at = self._position_filled_at
+        send_at = datetime.now()
+        send_delay_ms: Optional[float] = (
+            None
+            if filled_at is None
+            else (send_at - filled_at).total_seconds() * 1000.0
+        )
+        rtt_ms: Optional[float] = None
         try:
             # STOP は timeInForce 未指定（API デフォルト FAK）
             sl_order_id = int(
@@ -2792,6 +2960,7 @@ class VirtualTrader:
                     },
                 )
             )
+            rtt_ms = (datetime.now() - send_at).total_seconds() * 1000.0
             self._sl_close_order_ok_count += 1
             self._safe_console_print(
                 f"[{ts}] [OK] [REAL-SL] {pos.side}"
@@ -2799,17 +2968,26 @@ class VirtualTrader:
                 f" side={exit_side} STOP closeOrder @ {sl_price:,.0f}"
                 f" size={size:.4f}"
                 f" positionId={position_id}"
-                f" fill_to_sl_ms={self._fill_to_sl_ms()}"
+                f" fill_to_sl_ms={_fmt_ms(self._fill_to_sl_ms())}"
+                f" send_delay_ms={_fmt_ms(send_delay_ms)}"
+                f" rtt_ms={_fmt_ms(rtt_ms)}"
+                f" ws_latency_ms={_fmt_ms(ws_latency_ms)}"
                 f" attempt={attempt_no}"
                 f" bid={place_bid} ask={place_ask}"
             )
         except Exception as exc:
+            if rtt_ms is None:
+                rtt_ms = (datetime.now() - send_at).total_seconds() * 1000.0
             sl_error = exc
             self._sl_close_order_ng_count += 1
             self._log_sl_close_order_failure(
                 request_body=request_body,
                 sl_error=exc,
                 entry_price=entry,
+                attempt=attempt_no,
+                send_delay_ms=send_delay_ms,
+                rtt_ms=rtt_ms,
+                ws_latency_ms=ws_latency_ms,
             )
 
         self.position = PositionState(
@@ -3379,7 +3557,8 @@ class VirtualTrader:
             f"size={fill_size:.4f}\n"
             f"positionId={position_id}"
         )
-        self._place_real_tp_sl_orders()
+        self._note_fill_ws_latency_unlocked(evt, position_id)
+        self._place_first_real_sl_after_fill_unlocked()
 
     def _cancel_order(
         self,
