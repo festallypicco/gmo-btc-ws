@@ -22,6 +22,7 @@ from typing import Any, Callable, Dict, List, Optional
 import websocket
 
 from strategy_logic import OrderbookSnapshot
+from tick_recorder import TickRecorder
 from virtual_trader import _resolve_gmo_api_credentials
 
 WS_ENDPOINT = "wss://api.coin.z.com/ws/public/v1"
@@ -93,6 +94,7 @@ class WebSocketManager:
         self,
         on_snapshot_callback: Optional[Callable[[OrderbookSnapshot], None]] = None,
         on_exchange_status_callback: Optional[Callable[[str, str], None]] = None,
+        tick_recorder: Optional[TickRecorder] = None,
     ) -> None:
         self._snapshot: Optional[OrderbookSnapshot] = None
         self._depth_stats: Optional[Dict[str, Optional[float]]] = None
@@ -102,6 +104,7 @@ class WebSocketManager:
         self._stop_event        = threading.Event()
         self._on_snapshot_cb    = on_snapshot_callback  # リアルタイム売買コールバック
         self._on_status_cb      = on_exchange_status_callback
+        self._tick_recorder     = tick_recorder  # tick 記録（任意）
         self._maintenance_alert_active = False
         # trades 用（板情報の _lock / _snapshot とは独立）
         self._trade_lock = threading.Lock()
@@ -246,6 +249,22 @@ class WebSocketManager:
             self._snapshot = snap
             self._depth_stats = depth_stats
 
+        # tick 記録（depth 統計の計算直後。記録失敗は取引に影響させない）
+        if self._tick_recorder is not None:
+            try:
+                self._tick_recorder.record_book(
+                    timestamp_ms=int(time.time() * 1000),
+                    best_bid_price=snap.best_bid_price,
+                    best_bid_size=snap.best_bid_size,
+                    best_ask_price=snap.best_ask_price,
+                    best_ask_size=snap.best_ask_size,
+                    bid_depth5_size=depth_stats.get("bid_depth5_size"),
+                    ask_depth5_size=depth_stats.get("ask_depth5_size"),
+                    depth_imbalance=depth_stats.get("depth_imbalance"),
+                )
+            except Exception:
+                pass
+
         # 売買評価をミリ秒単位でリアルタイム実行（Streamlit の描画サイクルと独立）
         if self._on_snapshot_cb is not None:
             try:
@@ -276,6 +295,18 @@ class WebSocketManager:
         }
         with self._trade_lock:
             self._trade_buffer.append(trade)
+
+        if self._tick_recorder is not None:
+            try:
+                self._tick_recorder.record_trade(
+                    timestamp_ms=int(time.time() * 1000),
+                    side=side,
+                    price=price,
+                    size=size,
+                    exchange_timestamp=timestamp,
+                )
+            except Exception:
+                pass
 
     def _on_error(self, ws: websocket.WebSocketApp, error: Exception) -> None:
         print(f"[WebSocketManager] エラー発生: {error}")

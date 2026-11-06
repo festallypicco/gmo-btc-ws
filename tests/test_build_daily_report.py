@@ -27,6 +27,7 @@ from build_daily_report import (  # noqa: E402
     format_ai_review_report_lines,
     format_circuit_breaker_lines,
     format_heartbeat_lines,
+    format_pnl_cutover_lines,
     get_target_trading_day,
     position_restore_occurred,
 )
@@ -691,3 +692,44 @@ def test_heartbeat_summary_marks_stale(tmp_path: Path) -> None:
     )
     assert any("check_trading_anomaly: STALE" in line for line in lines)
     assert any("check_engine_crash_loop: missing" in line for line in lines)
+
+
+def test_pnl_cutover_note_lines(tmp_path: Path) -> None:
+    log_dir = tmp_path / "log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    # マーカーが無ければ注記は出ない
+    assert format_pnl_cutover_lines(log_dir=log_dir) == []
+
+    (log_dir / "pnl_cutover.json").write_text(
+        json.dumps(
+            {
+                "floored_from": "2026-11-06T15:30:00",
+                "rule": "settlement pnl floored to integer JPY",
+            }
+        ),
+        encoding="utf-8",
+    )
+    lines = format_pnl_cutover_lines(log_dir=log_dir)
+    assert any(
+        "2026-11-06T15:30:00" in line and "切り捨て" in line for line in lines
+    )
+    assert any("FORCE_CLOSE_REAL" in line for line in lines)
+
+
+def test_pnl_cutover_note_in_report_message(tmp_path: Path) -> None:
+    db_path = tmp_path / "runtime" / "live_state.db"
+    log_dir = tmp_path / "log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    _write_live_state(db_path, "2026-07-15", 0.0)
+
+    message = build_report_message(db_path=db_path, log_dir=log_dir)
+    assert "集計注記" not in message
+
+    (log_dir / "pnl_cutover.json").write_text(
+        json.dumps({"floored_from": "2026-11-06T15:30:00"}),
+        encoding="utf-8",
+    )
+    message = build_report_message(db_path=db_path, log_dir=log_dir)
+    assert "集計注記: PnLは2026-11-06T15:30:00以降" in message
+    assert "FORCE_CLOSE_REALは切替日以降の集計から決済件数に含む" in message

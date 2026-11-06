@@ -20,7 +20,7 @@ LOG_DIR = PROJECT_ROOT / "log"
 CONFIG_HISTORY_PATH = LOG_DIR / "config_history.jsonl"
 CHANGE_OUTCOMES_PATH = LOG_DIR / "change_outcomes.jsonl"
 
-EXIT_REASONS = {"TAKE_PROFIT", "STOP_LOSS", "FORCE_CLOSE_MAINTENANCE"}
+EXIT_REASONS = {"TAKE_PROFIT", "STOP_LOSS", "FORCE_CLOSE_MAINTENANCE", "FORCE_CLOSE_REAL"}
 
 
 def parse_args() -> argparse.Namespace:

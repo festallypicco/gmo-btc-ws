@@ -161,7 +161,11 @@ def summarize_trade_group(
 ) -> Dict[str, Any]:
     trade_count = sum(1 for r in rows if r["reason"] == "ENTRY")
     exit_rows = [r for r in rows if r["reason"] in {"TAKE_PROFIT", "STOP_LOSS"}]
-    forced_rows = [r for r in rows if r["reason"] == "FORCE_CLOSE_MAINTENANCE"]
+    forced_rows = [
+        r
+        for r in rows
+        if r["reason"] in {"FORCE_CLOSE_MAINTENANCE", "FORCE_CLOSE_REAL"}
+    ]
     exit_count = len(exit_rows)
 
     win_count = sum(1 for r in exit_rows if r["pnl"] > 0)

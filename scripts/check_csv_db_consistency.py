@@ -20,7 +20,7 @@ HEARTBEATS_PATH = ROOT_DIR / "runtime" / "monitor_heartbeats.json"
 HEARTBEAT_KEY = "check_csv_db_consistency"
 LOG_DIR = ROOT_DIR / "log"
 
-EXIT_REASONS: Set[str] = {"TAKE_PROFIT", "STOP_LOSS", "FORCE_CLOSE_MAINTENANCE"}
+EXIT_REASONS: Set[str] = {"TAKE_PROFIT", "STOP_LOSS", "FORCE_CLOSE_MAINTENANCE", "FORCE_CLOSE_REAL"}
 
 LOGGER = logging.getLogger("csv_db_consistency")
 

@@ -23,6 +23,8 @@ LIVE_STATE_DB_PATH = ROOT_DIR / "runtime" / "live_state.db"
 LOG_DIR = ROOT_DIR / "log"
 DAILY_HISTORY_PATH = LOG_DIR / "daily_history.jsonl"
 MANUAL_STOP_REASON_PATH = ROOT_DIR / "runtime" / "manual_stop_reason.json"
+EQUITY_GUARD_PATH = ROOT_DIR / "runtime" / "equity_guard.json"
+PNL_CUTOVER_FILENAME = "pnl_cutover.json"
 MONITOR_HEARTBEATS_PATH = ROOT_DIR / "runtime" / "monitor_heartbeats.json"
 POSITION_RESTORE_EVENTS_PATH = LOG_DIR / "position_restore_events.jsonl"
 CHANGE_OUTCOMES_PATH = LOG_DIR / "change_outcomes.jsonl"
@@ -31,6 +33,7 @@ SETTLEMENT_REASONS: Set[str] = {
     "TAKE_PROFIT",
     "STOP_LOSS",
     "FORCE_CLOSE_MAINTENANCE",
+    "FORCE_CLOSE_REAL",
 }
 
 MONITOR_SLA_HOURS = {
@@ -212,6 +215,82 @@ def format_circuit_breaker_lines(
         for key in sorted(details.keys()):
             lines.append(f"  {key}={details[key]}")
     return lines
+
+
+def _load_equity_guard_state(
+    guard_path: Path = EQUITY_GUARD_PATH,
+) -> Optional[Dict[str, Any]]:
+    if not guard_path.exists():
+        return None
+    try:
+        obj = json.loads(guard_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return obj if isinstance(obj, dict) else None
+
+
+def _format_equity_jpy(value: object) -> str:
+    if isinstance(value, (int, float)):
+        return f"{float(value):,.0f}円"
+    return "-"
+
+
+def format_equity_guard_lines(
+    guard_path: Path = EQUITY_GUARD_PATH,
+) -> List[str]:
+    """equityガード（止血ルール）の状態表示。状態ファイルが無い場合は「未導入」。"""
+    doc = _load_equity_guard_state(guard_path=guard_path)
+    if doc is None:
+        return ["equityガード: 未導入"]
+
+    state = str(doc.get("state") or "unknown")
+    state_label = {"armed": "監視中", "stopped": "停止中"}.get(state, state)
+    lines = [f"equityガード: {state_label}"]
+    lines.append(
+        "  起点: "
+        + _format_equity_jpy(doc.get("baseline_equity"))
+        + " / 停止ライン: "
+        + _format_equity_jpy(doc.get("stop_equity"))
+        + " / 直近equity: "
+        + _format_equity_jpy(doc.get("last_equity"))
+    )
+    stopped_at = doc.get("stopped_at")
+    if state == "stopped" and stopped_at:
+        lines.append(f"  停止時刻: {stopped_at}")
+    return lines
+
+
+def _load_pnl_cutover_from(log_dir: Path = LOG_DIR) -> Optional[str]:
+    """PnL 切り捨て揃えの切替マーカー（log/pnl_cutover.json）を読む。
+
+    マーカーが無い / 壊れている / 切替日時が文字列でない場合は None
+    （注記は出さない）。
+    """
+    path = log_dir / PNL_CUTOVER_FILENAME
+    if not path.exists():
+        return None
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    floored_from = obj.get("floored_from")
+    if not isinstance(floored_from, str) or not floored_from:
+        return None
+    return floored_from
+
+
+def format_pnl_cutover_lines(log_dir: Path = LOG_DIR) -> List[str]:
+    """集計方法の切替注記。切替マーカーが無い場合は何も出さない。"""
+    floored_from = _load_pnl_cutover_from(log_dir=log_dir)
+    if floored_from is None:
+        return []
+    return [
+        f"集計注記: PnLは{floored_from}以降、決済ごとに整数円へ切り捨てて集計",
+        "集計注記: FORCE_CLOSE_REALは切替日以降の集計から決済件数に含む"
+        "（AIサマリでは強制決済として分離集計）",
+    ]
 
 
 def count_ai_review_activity(
@@ -508,6 +587,7 @@ def build_report_message(
     heartbeats_path: Path = MONITOR_HEARTBEATS_PATH,
     restore_events_path: Path = POSITION_RESTORE_EVENTS_PATH,
     change_outcomes_path: Path = CHANGE_OUTCOMES_PATH,
+    equity_guard_path: Path = EQUITY_GUARD_PATH,
     now: Optional[datetime] = None,
 ) -> str:
     target_date, daily_pnl = get_target_trading_day(db_path=db_path)
@@ -526,6 +606,10 @@ def build_report_message(
     lines.extend(
         format_circuit_breaker_lines(target_date, reason_path=reason_path)
     )
+
+    lines.extend(format_equity_guard_lines(guard_path=equity_guard_path))
+
+    lines.extend(format_pnl_cutover_lines(log_dir=log_dir))
 
     lines.extend(
         format_ai_review_report_lines(
