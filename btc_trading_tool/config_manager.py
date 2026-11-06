@@ -28,6 +28,7 @@ DEFAULT_RECONCILIATION_INTERVAL_MINUTES = 5
 DEFAULT_RECONCILIATION_TOLERANCE_BTC = 0.0005
 DEFAULT_RECONCILIATION_TOLERANCE_JPY = 100.0
 DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.10
+DEFAULT_EQUITY_GUARD_DRAWDOWN_JPY = 5000.0
 DEFAULT_TRADING_MODE = "virtual"
 DEFAULT_INITIAL_JPY = 50_000.0
 ALLOWED_TRADING_MODES = frozenset({"virtual", "real"})
@@ -85,6 +86,7 @@ def default_config_payload() -> Dict[str, Any]:
         "reconciliation_tolerance_btc": DEFAULT_RECONCILIATION_TOLERANCE_BTC,
         "reconciliation_tolerance_jpy": DEFAULT_RECONCILIATION_TOLERANCE_JPY,
         "daily_loss_limit_pct": DEFAULT_DAILY_LOSS_LIMIT_PCT,
+        "equity_guard_drawdown_jpy": DEFAULT_EQUITY_GUARD_DRAWDOWN_JPY,
         "trading_mode": DEFAULT_TRADING_MODE,
         "initial_jpy": DEFAULT_INITIAL_JPY,
         "pending_rollouts": {},
@@ -115,6 +117,7 @@ def apply_engine_safety_defaults(payload: Dict[str, Any]) -> Dict[str, Any]:
     normalized.setdefault("reconciliation_tolerance_btc", DEFAULT_RECONCILIATION_TOLERANCE_BTC)
     normalized.setdefault("reconciliation_tolerance_jpy", DEFAULT_RECONCILIATION_TOLERANCE_JPY)
     normalized.setdefault("daily_loss_limit_pct", DEFAULT_DAILY_LOSS_LIMIT_PCT)
+    normalized.setdefault("equity_guard_drawdown_jpy", DEFAULT_EQUITY_GUARD_DRAWDOWN_JPY)
     normalized.setdefault("trading_mode", DEFAULT_TRADING_MODE)
     normalized.setdefault("initial_jpy", DEFAULT_INITIAL_JPY)
     trading_mode = normalized.get("trading_mode")
@@ -142,6 +145,10 @@ def apply_engine_safety_defaults(payload: Dict[str, Any]) -> Dict[str, Any]:
     normalized["daily_loss_limit_pct"] = _as_positive_float(
         normalized.get("daily_loss_limit_pct"),
         DEFAULT_DAILY_LOSS_LIMIT_PCT,
+    )
+    normalized["equity_guard_drawdown_jpy"] = _as_positive_float(
+        normalized.get("equity_guard_drawdown_jpy"),
+        DEFAULT_EQUITY_GUARD_DRAWDOWN_JPY,
     )
     normalized["initial_jpy"] = _as_positive_float(
         normalized.get("initial_jpy"),
@@ -298,6 +305,9 @@ def payload_to_history_snapshot(payload: Dict[str, Any]) -> Dict[str, Any]:
         ),
         "daily_loss_limit_pct": payload.get(
             "daily_loss_limit_pct", DEFAULT_DAILY_LOSS_LIMIT_PCT
+        ),
+        "equity_guard_drawdown_jpy": payload.get(
+            "equity_guard_drawdown_jpy", DEFAULT_EQUITY_GUARD_DRAWDOWN_JPY
         ),
         "pending_rollouts": payload.get("pending_rollouts", {}),
         "profiles": payload.get("profiles", []),

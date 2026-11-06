@@ -44,6 +44,7 @@ from datetime import datetime, time as dtime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from equity_guard import EquityGuard
 from portfolio_metrics import compute_position_value
 from profile_config import ProfileDefinition, get_active_profile
 from strategy_logic import (
@@ -154,6 +155,8 @@ def is_gmo_scheduled_maintenance_window(
 
 _RUNTIME_DIR = Path(__file__).resolve().parent.parent / "runtime"
 _MANUAL_STOP_FLAG_PATH = _RUNTIME_DIR / "manual_stop.flag"
+_EQUITY_GUARD_STATE_PATH = _RUNTIME_DIR / "equity_guard.json"
+_PNL_CUTOVER_FILENAME = "pnl_cutover.json"
 _REAL_STARTUP_RECONCILE_STATE_PATH = (
     _RUNTIME_DIR / "real_startup_reconcile_state.json"
 )
@@ -357,6 +360,7 @@ class VirtualTrader:
         on_daily_loss_limit: Optional[Callable[[Dict[str, float]], None]] = None,
         trading_mode: str = "virtual",
         on_critical_alert: Optional[Callable[[str], None]] = None,
+        equity_guard_drawdown_jpy: float = 5000.0,
     ) -> None:
         self._initial_jpy   = initial_jpy
         self.jpy_balance:   float          = initial_jpy
@@ -386,6 +390,11 @@ class VirtualTrader:
         mode = str(trading_mode).strip().lower()
         self.trading_mode: str = mode if mode in {"virtual", "real"} else "virtual"
         self._on_critical_alert = on_critical_alert
+        self._equity_guard = EquityGuard(
+            _EQUITY_GUARD_STATE_PATH,
+            drawdown_jpy=equity_guard_drawdown_jpy,
+        )
+        self._guard_stop_cancel_requested: bool = False
         self._force_close_real_cooldown_until: float = 0.0
         self.trading_day_date: str = calc_trading_day_date()
         self.daily_start_balance: float = float(initial_jpy)
@@ -457,6 +466,7 @@ class VirtualTrader:
         self._total_gross_win: float = 0.0
         self._total_gross_loss:float = 0.0
         self._cumulative_pnl:  float = 0.0   # 決済済み損益の累計
+        self._ensure_pnl_cutover_marker()
 
     # ------------------------------------------------------------------ #
     #  Public interface                                                    #
@@ -676,6 +686,7 @@ class VirtualTrader:
             side = "BUY"
 
         resolved_profile_name = self._locked_profile_name or self.active_profile_name
+        net_pnl = self._floored_settlement_pnl(net_pnl)
         self._update_kpi(net_pnl)
         self.daily_realized_pnl += net_pnl
         self.check_daily_loss_limit()
@@ -871,8 +882,13 @@ class VirtualTrader:
                 if self._locked_config is not None:
                     self.config = self._locked_config
 
+            if self._guard_stop_cancel_requested:
+                self._guard_stop_cancel_requested = False
+                if self.position.is_pending:
+                    self._cancel_pending_entry_for_equity_guard(snap)
+
             if self.position.is_pending:
-                self._check_pending_fill(snap)
+                self._check_pending_fill(snap, entry_blocked=entry_blocked)
             elif self.position.side is not None:
                 self._check_active_position(snap)
             else:
@@ -1035,7 +1051,34 @@ class VirtualTrader:
     #  Phase 1: 指値注文の約定確認（is_pending=True のとき）              #
     # ------------------------------------------------------------------ #
 
-    def _check_pending_fill(self, snap: OrderbookSnapshot) -> None:
+    def _cancel_pending_entry_for_equity_guard(
+        self, snap: OrderbookSnapshot
+    ) -> None:
+        """equity guard stop: 約定待ちのエントリー注文を取り消す。
+
+        実注文の取消は既存の _cancel_order 経路を使う（real は GMO
+        cancelOrder を呼び、失敗時は pending 維持、約定済みなら建玉として
+        adopt する）。取消しきれず pending のままなら WARN を残す。
+        その場合も板タッチ約定は entry_blocked で防がれる。
+        """
+        order_id = self.position.entry_order_id
+        side = self.position.side
+        self._cancel_order(
+            snap,
+            cancel_reason=CANCEL_REASON_MAINTENANCE,
+            apply_cooldown=False,
+            trade_reason="FORCE_CANCEL_EQUITY_GUARD",
+            real_cancel_context="equity_guard_stop",
+        )
+        if self.position.is_pending:
+            self._safe_console_print(
+                "[WARN] [EquityGuard] pending entry cancel did not complete;"
+                f" order may still be live side={side} orderId={order_id}"
+            )
+
+    def _check_pending_fill(
+        self, snap: OrderbookSnapshot, *, entry_blocked: bool = False
+    ) -> None:
         """
         Maker 指値の約定シミュレーションと、未約定時のキャンセル判定。
 
@@ -1050,6 +1093,8 @@ class VirtualTrader:
           板タッチ仮想約定は行わず Private WS execution に一本化する。
           ただしキャンセル条件（Imbalance / 乖離 / タイムアウト）は板タッチ有無に
           関わらず常に評価する（価格が指値を超えて離れた状態でも安全装置を残す）。
+          entry_blocked が True の間は約定させない（遮断理由は問わない）。
+          キャンセル条件の評価はその間も継続する。
         """
         pos = self.position
         filled = (
@@ -1058,7 +1103,8 @@ class VirtualTrader:
         )
 
         # virtual のみ: 板タッチで仮想約定。real は WS 約定に任せ、ここではスキップ。
-        if filled and self.trading_mode != "real":
+        # entry_blocked 中は約定させない（pending を維持し、キャンセル判定のみ進める）。
+        if filled and not entry_blocked and self.trading_mode != "real":
             tp_price = (
                 pos.entry_price * (1 + self.config.take_profit_pct)
                 if pos.side == "LONG"
@@ -1199,6 +1245,10 @@ class VirtualTrader:
             )
             or self._is_safe_mode_active(now)
             or _MANUAL_STOP_FLAG_PATH.exists()
+            or (
+                self.trading_mode == "real"
+                and self._equity_guard.is_stopped()
+            )
         )
 
     def _update_maintenance_state(self, snap: OrderbookSnapshot, now: datetime) -> None:
@@ -2342,6 +2392,7 @@ class VirtualTrader:
             order_type, side = "MAKER", "BUY"
 
         resolved_profile_name = self._locked_profile_name or self.active_profile_name
+        net_pnl = self._floored_settlement_pnl(net_pnl)
         self._update_kpi(net_pnl)
         self.daily_realized_pnl += net_pnl
         self.check_daily_loss_limit()
@@ -2377,6 +2428,7 @@ class VirtualTrader:
             order_type, side = "TAKER", "BUY"
 
         resolved_profile_name = self._locked_profile_name or self.active_profile_name
+        net_pnl = self._floored_settlement_pnl(net_pnl)
         self._update_kpi(net_pnl)
         self.daily_realized_pnl += net_pnl
         self.check_daily_loss_limit()
@@ -3028,6 +3080,7 @@ class VirtualTrader:
                 f"[{ts}] [OK] [{context}] synced jpy_balance"
                 f" from equity_jpy={self.jpy_balance:,.0f}"
             )
+            self.evaluate_equity_guard(real_state)
         except Exception as sync_exc:
             self._safe_console_print(
                 f"[{ts}] [WARN] [{context}] equity sync failed: {sync_exc}"
@@ -3678,6 +3731,7 @@ class VirtualTrader:
             self.jpy_balance += net_pnl
             side, order_type = "BUY", "TAKER"
 
+        net_pnl = self._floored_settlement_pnl(net_pnl)
         self._update_kpi(net_pnl)
         self.daily_realized_pnl += net_pnl
         self.check_daily_loss_limit()
@@ -3924,6 +3978,129 @@ class VirtualTrader:
             self._loss_count       += 1
             self._daily_loss_count += 1
             self._total_gross_loss += abs(net_pnl)
+
+    @staticmethod
+    def _floored_settlement_pnl(net_pnl: float) -> float:
+        """決済 PnL を GMO の整数円切り捨てに揃える（KPI / CSV 記録用）。
+
+        GMO は決済損益を整数円へ切り捨てて口座へ計上するため、内部 KPI と
+        CSV の pnl 列も同じ切り捨て値で累積する。jpy_balance の更新には
+        使わない（残高は equity 同期で実測に揃う）。
+        """
+        return float(math.floor(net_pnl))
+
+    def _ensure_pnl_cutover_marker(self) -> None:
+        """切り捨て揃えの切替マーカー（log/pnl_cutover.json）を初回のみ記録する。"""
+        try:
+            marker_path = LOG_DIR / _PNL_CUTOVER_FILENAME
+            if marker_path.exists():
+                return
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "floored_from": datetime.now().isoformat(timespec="seconds"),
+                "rule": (
+                    "settlement pnl floored to integer JPY (math.floor) "
+                    "for KPI and CSV pnl"
+                ),
+            }
+            tmp_path = LOG_DIR / (_PNL_CUTOVER_FILENAME + ".tmp")
+            tmp_path.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            os.replace(tmp_path, marker_path)
+        except Exception as exc:
+            self._safe_console_print(
+                f"[WARN] pnl cutover marker write failed: {exc}"
+            )
+
+    # ------------------------------------------------------------------ #
+    #  equity ガード（止血ルール）                                          #
+    # ------------------------------------------------------------------ #
+
+    def evaluate_equity_guard(self, real_state: Dict[str, float]) -> bool:
+        """
+        実測 equity で equity ガードを評価する。
+        起点が未取得ならこの観測で取得する。新たに停止したらアラートを送り True。
+        ガード自体の失敗で取引処理を止めない（例外は外へ出さない）。
+        """
+        if self.trading_mode != "real":
+            return False
+        try:
+            raw_equity = real_state.get("equity_jpy")
+            try:
+                equity = float(raw_equity)
+            except (TypeError, ValueError):
+                equity = 0.0
+            if not equity > 0.0:
+                # equity 欠落・None・0以下は「取得失敗」と同じ扱いにし、
+                # 評価自体をスキップする（起点も取らない・発動もしない）
+                self._safe_console_print(
+                    "[WARN] [EquityGuard] equity_jpy missing or invalid;"
+                    " evaluation skipped"
+                )
+                return False
+            position_open = float(real_state.get("position_size_btc", 0.0)) != 0.0
+            before = self._equity_guard.state_snapshot()
+            newly_stopped = self._equity_guard.evaluate(
+                equity, position_open=position_open
+            )
+            after = self._equity_guard.state_snapshot()
+            if before is None and after is not None:
+                self._safe_console_print(
+                    "[EquityGuard] baseline captured:"
+                    f" baseline_equity={float(after.get('baseline_equity', 0.0)):,.0f}"
+                    f" stop_equity={float(after.get('stop_equity', 0.0)):,.0f}"
+                    f" position_open={bool(after.get('baseline_position_open'))}"
+                )
+            if newly_stopped and after is not None:
+                self._emit_critical_alert(
+                    "\n".join(
+                        [
+                            "[ALERT] equity guard triggered: new entries stopped",
+                            f"baseline_equity={float(after.get('baseline_equity', 0.0)):,.0f}",
+                            f"current_equity={equity:,.0f}",
+                            f"stop_equity={float(after.get('stop_equity', 0.0)):,.0f}",
+                            "detail=open position is left to TP/SL; restart is manual only",
+                        ]
+                    )
+                )
+            if (
+                after is not None
+                and after.get("state") == "stopped"
+                and self.position.is_pending
+                and not self._guard_stop_cancel_requested
+            ):
+                # 停止中に約定待ちのエントリー注文が残っていたら、次の板更新
+                # （trader ロック保持下）で既存のキャンセル経路により取り消す。
+                # 取消に失敗した場合は次の定期評価で再度要求する
+                self._guard_stop_cancel_requested = True
+                self._safe_console_print(
+                    "[EquityGuard] stop active with pending entry;"
+                    " cancel requested"
+                )
+            return newly_stopped
+        except Exception as exc:
+            self._safe_console_print(
+                f"[WARN] [EquityGuard] evaluation failed: {exc}"
+            )
+            return False
+
+    def run_equity_guard_check(self) -> None:
+        """定期確認用: 口座 equity を取得してガードを評価する。
+
+        API 取得失敗時は判定しない（誤停止防止）。例外は外へ出さない。
+        """
+        if self.trading_mode != "real":
+            return
+        try:
+            real_state = fetch_real_account_state()
+        except Exception as exc:
+            self._safe_console_print(
+                f"[WARN] [EquityGuard] account fetch failed: {exc}"
+            )
+            return
+        self.evaluate_equity_guard(real_state)
 
     # ------------------------------------------------------------------ #
     #  Logging                                                             #

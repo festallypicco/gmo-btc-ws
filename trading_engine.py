@@ -58,6 +58,7 @@ from virtual_trader import (  # noqa: E402
     calc_trading_day_date,
     run_reconciliation_check,
 )
+from tick_recorder import TickRecorder  # noqa: E402
 from websocket_manager import PrivateWebSocketManager, WebSocketManager  # noqa: E402
 
 SCRIPTS_DIR = ROOT_DIR / "scripts"
@@ -77,6 +78,7 @@ MANUAL_STOP_FLAG_PATH = ROOT_DIR / "runtime" / "manual_stop.flag"
 MANUAL_STOP_REASON_PATH = ROOT_DIR / "runtime" / "manual_stop_reason.json"
 MANUAL_STOP_PAUSE_POLL_SEC = 5
 MANUAL_STOP_STILL_PAUSED_NOTIFY_SEC = 24 * 3600
+EQUITY_GUARD_CHECK_INTERVAL_SEC = 300
 
 _order_event_timestamps: list[float] = []
 _order_rate_lock = threading.Lock()
@@ -388,11 +390,13 @@ def _notify_still_paused() -> None:
 def _build_ws_managers(
     trader: VirtualTrader,
     trading_mode: str,
+    tick_recorder: Optional[TickRecorder] = None,
 ) -> tuple[WebSocketManager, Optional[PrivateWebSocketManager]]:
     """起動時 / PAUSED 再開時に使う WebSocket マネージャを生成する。"""
     ws_manager = WebSocketManager(
         on_snapshot_callback=trader.on_orderbook_update,
         on_exchange_status_callback=trader.on_exchange_status,
+        tick_recorder=tick_recorder,
     )
     private_ws_manager: Optional[PrivateWebSocketManager] = None
     if trading_mode == "real":
@@ -411,6 +415,7 @@ def _safety_settings_from_payload(payload: Dict[str, Any]) -> Dict[str, float]:
         "reconciliation_tolerance_btc": float(normalized["reconciliation_tolerance_btc"]),
         "reconciliation_tolerance_jpy": float(normalized["reconciliation_tolerance_jpy"]),
         "daily_loss_limit_pct": float(normalized["daily_loss_limit_pct"]),
+        "equity_guard_drawdown_jpy": float(normalized["equity_guard_drawdown_jpy"]),
         "initial_jpy": float(normalized["initial_jpy"]),
     }
 
@@ -943,9 +948,11 @@ def main() -> None:
     reconciliation_tolerance_btc = float(safety_settings["reconciliation_tolerance_btc"])
     reconciliation_tolerance_jpy = float(safety_settings["reconciliation_tolerance_jpy"])
     daily_loss_limit_pct = float(safety_settings["daily_loss_limit_pct"])
+    equity_guard_drawdown_jpy = float(safety_settings["equity_guard_drawdown_jpy"])
     initial_jpy = float(safety_settings["initial_jpy"])
     reconciliation_pending_mismatch = [False]
     next_reconciliation_ts = time.time() + reconciliation_interval_sec
+    next_equity_guard_ts = time.time()
 
     def _before_entry_order() -> bool:
         if check_order_rate_limit(order_rate_limit):
@@ -1002,6 +1009,7 @@ def main() -> None:
         on_daily_loss_limit=_on_daily_loss_limit,
         trading_mode=trading_mode,
         on_critical_alert=send_telegram_message,
+        equity_guard_drawdown_jpy=equity_guard_drawdown_jpy,
     )
     trader.restore_persisted_account_state(
         jpy_balance=persisted_daily.get("jpy_balance"),
@@ -1065,12 +1073,19 @@ def main() -> None:
     )
     trader.engine_status = "RUNNING"
     trader.config_version = str(payload.get("version", DEFAULT_CONFIG_VERSION))
-    ws_manager, private_ws_manager = _build_ws_managers(trader, trading_mode)
+    tick_recorder = TickRecorder(
+        tick_dir=ROOT_DIR / "log" / "tick",
+        on_alert=send_telegram_message,
+    )
+    ws_manager, private_ws_manager = _build_ws_managers(
+        trader, trading_mode, tick_recorder=tick_recorder
+    )
     snapshot_logger = MarketSnapshotLogger(interval_sec=60)
 
     _write_pid()
     _print_startup_position(trader)
     ws_manager.start()
+    tick_recorder.start()
     if private_ws_manager is not None:
         private_ws_manager.start()
     print(
@@ -1108,6 +1123,13 @@ def main() -> None:
                 except Exception as exc:
                     print(f"[Engine] reconciliation エラー: {exc}")
                 next_reconciliation_ts = now_ts + reconciliation_interval_sec
+
+            if now_ts >= next_equity_guard_ts:
+                try:
+                    trader.run_equity_guard_check()
+                except Exception as exc:
+                    print(f"[Engine] equity guard check エラー: {exc}")
+                next_equity_guard_ts = now_ts + EQUITY_GUARD_CHECK_INTERVAL_SEC
 
             manual_stop_requested = MANUAL_STOP_FLAG_PATH.exists()
             with trader._lock:
@@ -1177,8 +1199,11 @@ def main() -> None:
 
             print("[Engine] manual_stop.flag cleared; resuming from PAUSED")
             trader.engine_status = "RUNNING"
-            ws_manager, private_ws_manager = _build_ws_managers(trader, trading_mode)
+            ws_manager, private_ws_manager = _build_ws_managers(
+                trader, trading_mode, tick_recorder=tick_recorder
+            )
             ws_manager.start()
+            tick_recorder.start()
             if private_ws_manager is not None:
                 private_ws_manager.start()
             try:
@@ -1186,12 +1211,14 @@ def main() -> None:
             except Exception as exc:
                 print(f"[Engine] resume live_state 更新エラー: {exc}")
             next_reconciliation_ts = time.time() + reconciliation_interval_sec
+            next_equity_guard_ts = time.time() + EQUITY_GUARD_CHECK_INTERVAL_SEC
             print("[Engine] resumed to RUNNING")
     finally:
         print("[Engine] シャットダウン処理を開始します。")
         if private_ws_manager is not None:
             private_ws_manager.stop()
         ws_manager.stop()
+        tick_recorder.stop()
         _remove_pid()
         if trading_mode == "real":
             release_gmo_trade_key_lock()
