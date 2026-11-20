@@ -391,12 +391,14 @@ def _build_ws_managers(
     trader: VirtualTrader,
     trading_mode: str,
     tick_recorder: Optional[TickRecorder] = None,
+    tick_recorder_lev: Optional[TickRecorder] = None,
 ) -> tuple[WebSocketManager, Optional[PrivateWebSocketManager]]:
     """起動時 / PAUSED 再開時に使う WebSocket マネージャを生成する。"""
     ws_manager = WebSocketManager(
         on_snapshot_callback=trader.on_orderbook_update,
         on_exchange_status_callback=trader.on_exchange_status,
         tick_recorder=tick_recorder,
+        tick_recorder_lev=tick_recorder_lev,
     )
     private_ws_manager: Optional[PrivateWebSocketManager] = None
     if trading_mode == "real":
@@ -1077,8 +1079,18 @@ def main() -> None:
         tick_dir=ROOT_DIR / "log" / "tick",
         on_alert=send_telegram_message,
     )
+    # レバレッジ市場（BTC_JPY）の tick 記録。執行市場の再現・検証用で、
+    # 売買判定には使わない（websocket_manager 側で記録専用に振り分ける）
+    tick_recorder_lev = TickRecorder(
+        tick_dir=ROOT_DIR / "log" / "tick",
+        on_alert=send_telegram_message,
+        file_prefix="_lev",
+    )
     ws_manager, private_ws_manager = _build_ws_managers(
-        trader, trading_mode, tick_recorder=tick_recorder
+        trader,
+        trading_mode,
+        tick_recorder=tick_recorder,
+        tick_recorder_lev=tick_recorder_lev,
     )
     snapshot_logger = MarketSnapshotLogger(interval_sec=60)
 
@@ -1086,6 +1098,7 @@ def main() -> None:
     _print_startup_position(trader)
     ws_manager.start()
     tick_recorder.start()
+    tick_recorder_lev.start()
     if private_ws_manager is not None:
         private_ws_manager.start()
     print(
@@ -1200,10 +1213,14 @@ def main() -> None:
             print("[Engine] manual_stop.flag cleared; resuming from PAUSED")
             trader.engine_status = "RUNNING"
             ws_manager, private_ws_manager = _build_ws_managers(
-                trader, trading_mode, tick_recorder=tick_recorder
+                trader,
+                trading_mode,
+                tick_recorder=tick_recorder,
+                tick_recorder_lev=tick_recorder_lev,
             )
             ws_manager.start()
             tick_recorder.start()
+            tick_recorder_lev.start()
             if private_ws_manager is not None:
                 private_ws_manager.start()
             try:
@@ -1219,6 +1236,7 @@ def main() -> None:
             private_ws_manager.stop()
         ws_manager.stop()
         tick_recorder.stop()
+        tick_recorder_lev.stop()
         _remove_pid()
         if trading_mode == "real":
             release_gmo_trade_key_lock()

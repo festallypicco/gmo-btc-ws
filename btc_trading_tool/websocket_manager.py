@@ -39,6 +39,21 @@ SUBSCRIBE_TRADES_MSG = json.dumps({
     "symbol": "BTC",
 })
 
+# レバレッジ市場（執行市場）の tick 記録専用。売買判定には使わない。
+LEVERAGE_SYMBOL = "BTC_JPY"
+
+SUBSCRIBE_LEV_MSG = json.dumps({
+    "command": "subscribe",
+    "channel": "orderbooks",
+    "symbol": LEVERAGE_SYMBOL,
+})
+
+SUBSCRIBE_LEV_TRADES_MSG = json.dumps({
+    "command": "subscribe",
+    "channel": "trades",
+    "symbol": LEVERAGE_SYMBOL,
+})
+
 # 再接続の待機時間（秒）。失敗のたびに指数バックオフで延ばし、上限で頭打ちにする。
 _RECONNECT_BASE_SEC: float = 3.0
 _RECONNECT_MAX_SEC:  float = 60.0
@@ -95,6 +110,7 @@ class WebSocketManager:
         on_snapshot_callback: Optional[Callable[[OrderbookSnapshot], None]] = None,
         on_exchange_status_callback: Optional[Callable[[str, str], None]] = None,
         tick_recorder: Optional[TickRecorder] = None,
+        tick_recorder_lev: Optional[TickRecorder] = None,
     ) -> None:
         self._snapshot: Optional[OrderbookSnapshot] = None
         self._depth_stats: Optional[Dict[str, Optional[float]]] = None
@@ -105,6 +121,7 @@ class WebSocketManager:
         self._on_snapshot_cb    = on_snapshot_callback  # リアルタイム売買コールバック
         self._on_status_cb      = on_exchange_status_callback
         self._tick_recorder     = tick_recorder  # tick 記録（任意）
+        self._tick_recorder_lev = tick_recorder_lev  # レバレッジ市場 tick 記録（任意）
         self._maintenance_alert_active = False
         # trades 用（板情報の _lock / _snapshot とは独立）
         self._trade_lock = threading.Lock()
@@ -214,12 +231,23 @@ class WebSocketManager:
         # 同一接続で連続 subscribe すると ERR-5003 になることがあるため間隔を空ける
         time.sleep(2.0)
         ws.send(SUBSCRIBE_TRADES_MSG)
+        if self._tick_recorder_lev is not None:
+            # レバレッジ市場は tick 記録専用。レコーダーがある場合のみ購読する
+            time.sleep(2.0)
+            ws.send(SUBSCRIBE_LEV_MSG)
+            time.sleep(2.0)
+            ws.send(SUBSCRIBE_LEV_TRADES_MSG)
 
     def _on_message(self, ws: websocket.WebSocketApp, message: str) -> None:
         try:
             data = json.loads(message)
         except json.JSONDecodeError as exc:
             print(f"[WebSocketManager] orderbook JSON parse error: {exc}")
+            return
+        # レバレッジ市場は記録専用経路へ。現物のスナップショット・売買
+        # コールバック・約定バッファには一切混入させない
+        if str(data.get("symbol") or "") == LEVERAGE_SYMBOL:
+            self._on_leverage_message(data)
             return
         if str(data.get("channel") or "") == "trades":
             self._on_trades_message(data)
@@ -307,6 +335,51 @@ class WebSocketManager:
                 )
             except Exception:
                 pass
+
+    def _on_leverage_message(self, data: Dict[str, Any]) -> None:
+        """レバレッジ市場（BTC_JPY）専用。tick 記録だけを行い、現物の
+        スナップショット・売買コールバック・約定バッファには触れない。
+        記録経路の例外が取引処理へ伝播しないよう全体を fail-silent にする。"""
+        recorder = self._tick_recorder_lev
+        if recorder is None:
+            return
+        try:
+            if str(data.get("channel") or "") == "trades":
+                side = str(data.get("side") or "").upper()
+                if side not in {"BUY", "SELL"}:
+                    return
+                price = float(data.get("price") or 0.0)
+                size = float(data.get("size") or 0.0)
+                if size <= 0.0:
+                    return
+                recorder.record_trade(
+                    timestamp_ms=int(time.time() * 1000),
+                    side=side,
+                    price=price,
+                    size=size,
+                    exchange_timestamp=str(data.get("timestamp") or ""),
+                )
+                return
+
+            if str(data.get("channel") or "") != "orderbooks":
+                return
+            asks = data.get("asks", [])
+            bids = data.get("bids", [])
+            if not asks or not bids:
+                return
+            depth_stats = _compute_depth_stats(bids, asks, 5)
+            recorder.record_book(
+                timestamp_ms=int(time.time() * 1000),
+                best_bid_price=float(bids[0]["price"]),
+                best_bid_size=float(bids[0]["size"]),
+                best_ask_price=float(asks[0]["price"]),
+                best_ask_size=float(asks[0]["size"]),
+                bid_depth5_size=depth_stats.get("bid_depth5_size"),
+                ask_depth5_size=depth_stats.get("ask_depth5_size"),
+                depth_imbalance=depth_stats.get("depth_imbalance"),
+            )
+        except Exception as exc:
+            print(f"[WebSocketManager] leverage tick parse error: {exc}")
 
     def _on_error(self, ws: websocket.WebSocketApp, error: Exception) -> None:
         print(f"[WebSocketManager] エラー発生: {error}")

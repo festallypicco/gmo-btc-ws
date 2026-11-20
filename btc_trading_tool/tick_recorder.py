@@ -9,6 +9,9 @@ tick_recorder.py
   日付は取引日（06:00 境界）で、06:00 のロールオーバー時に前日分を gzip 化する
 - 保持は 35 日。空きディスクが 5GB 未満になったら記録を自動停止し、
   アラートコールバックで通知する
+- file_prefix を指定すると別市場の記録に使える（例: "_lev" で
+  book_lev_YYYY-MM-DD.csv）。同じ tick_dir を共有しても、gzip / 保持削除の
+  対象は自分の接頭辞のファイルだけに限られ、市場間で干渉しない
 """
 from __future__ import annotations
 
@@ -34,7 +37,6 @@ _BOOK_HEADER = (
 )
 _TRADES_HEADER = "timestamp_ms,side,price,size,exchange_timestamp"
 _HEADERS = {"book": _BOOK_HEADER, "trades": _TRADES_HEADER}
-_PREFIXES = {"book": "book", "trades": "trades"}
 
 
 def _trading_day_label(now: datetime) -> str:
@@ -59,6 +61,7 @@ class TickRecorder:
         tick_dir: Path,
         on_alert: Optional[Callable[[str], None]] = None,
         *,
+        file_prefix: str = "",
         retention_days: int = _DEFAULT_RETENTION_DAYS,
         min_free_bytes: int = _DEFAULT_MIN_FREE_BYTES,
         flush_interval_sec: float = _DEFAULT_FLUSH_INTERVAL_SEC,
@@ -67,6 +70,11 @@ class TickRecorder:
     ) -> None:
         self._tick_dir = Path(tick_dir)
         self._on_alert = on_alert
+        self._file_prefix = str(file_prefix)
+        self._prefixes = {
+            "book": f"book{self._file_prefix}",
+            "trades": f"trades{self._file_prefix}",
+        }
         self._retention_days = int(retention_days)
         self._min_free_bytes = int(min_free_bytes)
         self._flush_interval_sec = float(flush_interval_sec)
@@ -91,7 +99,9 @@ class TickRecorder:
             return
         self._stop_event.clear()
         self._thread = threading.Thread(
-            target=self._run, name="tick-recorder", daemon=True
+            target=self._run,
+            name=f"tick-recorder{self._file_prefix}",
+            daemon=True,
         )
         self._thread.start()
 
@@ -231,7 +241,7 @@ class TickRecorder:
                 self._close_handle(kind, handles)
 
     def _open_file(self, kind: str, day_label: str) -> Optional[TextIO]:
-        path = self._tick_dir / f"{_PREFIXES[kind]}_{day_label}.csv"
+        path = self._tick_dir / f"{self._prefixes[kind]}_{day_label}.csv"
         try:
             need_header = not path.exists() or path.stat().st_size == 0
             handle = path.open("a", encoding="utf-8", newline="")
@@ -275,7 +285,7 @@ class TickRecorder:
             handles[kind] = None
 
     def _gzip_file(self, kind: str, day_label: str) -> None:
-        src = self._tick_dir / f"{_PREFIXES[kind]}_{day_label}.csv"
+        src = self._tick_dir / f"{self._prefixes[kind]}_{day_label}.csv"
         if not src.exists():
             return
         dst = src.with_suffix(".csv.gz")
@@ -296,7 +306,11 @@ class TickRecorder:
         for path in candidates:
             label = self._label_from_name(path.name)
             if label is not None and label != today_label:
-                kind = "book" if path.name.startswith("book_") else "trades"
+                kind = (
+                    "book"
+                    if path.name.startswith(f"{self._prefixes['book']}_")
+                    else "trades"
+                )
                 self._gzip_file(kind, label)
 
     def _prune_old_files(self) -> None:
@@ -319,14 +333,27 @@ class TickRecorder:
         except Exception as exc:
             print(f"[TickRecorder] prune failed: {exc}")
 
-    @staticmethod
-    def _label_from_name(name: str) -> Optional[str]:
-        for prefix in ("book_", "trades_"):
+    def _label_from_name(self, name: str) -> Optional[str]:
+        """自分の接頭辞のファイル名から取引日ラベルを取り出す。
+
+        他市場（接頭辞違い）のファイルや日付として解釈できない名前は
+        対象外として None を返す。同じ tick_dir を共有しても、gzip /
+        保持削除が市場間で干渉しないための隔離である。
+        """
+        for prefix in (
+            f"{self._prefixes['book']}_",
+            f"{self._prefixes['trades']}_",
+        ):
             if name.startswith(prefix):
                 rest = name[len(prefix):]
                 for suffix in (".csv.gz", ".csv"):
                     if rest.endswith(suffix):
-                        return rest[: -len(suffix)]
+                        label = rest[: -len(suffix)]
+                        try:
+                            datetime.strptime(label, "%Y-%m-%d")
+                        except ValueError:
+                            return None
+                        return label
                 return None
         return None
 
@@ -339,8 +366,11 @@ class TickRecorder:
         if free >= self._min_free_bytes:
             return True
         self._disk_stopped = True
+        subject = "tick recorder"
+        if self._file_prefix:
+            subject += f" ({self._file_prefix})"
         message = (
-            "[ALERT] tick recorder stopped: low disk space\n"
+            f"[ALERT] {subject} stopped: low disk space\n"
             f"free_bytes={free}\n"
             f"min_free_bytes={self._min_free_bytes}\n"
             f"tick_dir={self._tick_dir}"
