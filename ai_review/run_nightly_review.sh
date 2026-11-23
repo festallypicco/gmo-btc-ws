@@ -3,12 +3,26 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-LOCK_PATH="$SCRIPT_DIR/run_nightly_review.lock"
 LOG_DIR="$PROJECT_ROOT/log"
+# ロックは log ディレクトリ（bind mount でコンテナをまたいで共有される場所）に置く。
+# ai_review は使い捨てコンテナで実行されるため、スクリプトと同階層では
+# 実行をまたいだ直列化にならない。run_pipeline_locked.sh と同じロックを使う。
+LOCK_PATH="$LOG_DIR/run_nightly_review.lock"
 LOG_PATH="$LOG_DIR/ai_review_run_$(date +%Y-%m-%d).log"
 CHANGE_OUTCOMES_SCRIPT="$SCRIPT_DIR/build_change_outcomes.py"
 SUMMARY_SCRIPT="$SCRIPT_DIR/build_ai_review_summary.py"
 REVIEW_PIPELINE_SCRIPT="$SCRIPT_DIR/review_pipeline.py"
+PROPOSER_PROMPT_SCRIPT="$SCRIPT_DIR/build_proposer_prompt.py"
+# 提案役の担い手: groq（従来どおり review_pipeline.py まで一貫実行）/
+# jiji（プロンプトのファイル化までで終了し、提案作成とパイプライン起動はじじ側ジョブが行う）
+PROPOSER_MODE="${AI_REVIEW_PROPOSER_MODE:-groq}"
+case "$PROPOSER_MODE" in
+    groq|jiji) ;;
+    *)
+        echo "[ERROR] unknown AI_REVIEW_PROPOSER_MODE: $PROPOSER_MODE (expected: groq or jiji)" >&2
+        exit 1
+        ;;
+esac
 
 mkdir -p "$LOG_DIR"
 
@@ -73,15 +87,28 @@ if [ "$exit_code" -eq 0 ]; then
     summary_exit=$?
     if [ "$summary_exit" -eq 0 ]; then
         log "INFO" "build_ai_review_summary.py completed successfully"
-        log "INFO" "Running review_pipeline.py"
-        run_and_log "$REVIEW_PIPELINE_SCRIPT"
-        review_exit=$?
-        if [ "$review_exit" -eq 0 ]; then
-            log "INFO" "review_pipeline.py completed successfully"
-            exit_code=0
+        if [ "$PROPOSER_MODE" = "jiji" ]; then
+            log "INFO" "Running build_proposer_prompt.py (proposer mode: jiji)"
+            run_and_log "$PROPOSER_PROMPT_SCRIPT"
+            prompt_exit=$?
+            if [ "$prompt_exit" -eq 0 ]; then
+                log "INFO" "build_proposer_prompt.py completed successfully"
+                exit_code=0
+            else
+                log "ERROR" "build_proposer_prompt.py failed (exit=$prompt_exit)"
+                exit_code=1
+            fi
         else
-            log "ERROR" "review_pipeline.py failed (exit=$review_exit)"
-            exit_code=1
+            log "INFO" "Running review_pipeline.py"
+            run_and_log "$REVIEW_PIPELINE_SCRIPT"
+            review_exit=$?
+            if [ "$review_exit" -eq 0 ]; then
+                log "INFO" "review_pipeline.py completed successfully"
+                exit_code=0
+            else
+                log "ERROR" "review_pipeline.py failed (exit=$review_exit)"
+                exit_code=1
+            fi
         fi
     else
         log "ERROR" "build_ai_review_summary.py failed (exit=$summary_exit)"
