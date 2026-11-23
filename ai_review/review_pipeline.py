@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -626,6 +627,13 @@ def parse_args() -> argparse.Namespace:
         default="live",
         help="検証用モード。通常運用は live",
     )
+    parser.add_argument(
+        "--proposer-file",
+        help=(
+            "提案役の出力をこのファイルから読む（Groq を呼ばない）。"
+            "live モードでのみ有効。ファイルが無い・空の場合はエラーにする"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -839,9 +847,38 @@ def write_atomic_json(path: Path, payload: Dict[str, Any]) -> None:
     os.replace(tmp_path, path)
 
 
-def _call_proposer(summary: Dict[str, Any], test_mode: str) -> str:
+PROPOSER_FILE_MAX_BYTES = 32768
+
+
+def _call_proposer(
+    summary: Dict[str, Any],
+    test_mode: str,
+    proposer_file: Optional[str] = None,
+    target_date: Optional[str] = None,
+) -> str:
     if test_mode != "live":
         return "Stub proposer: adjust thresholds based on recent trend."
+    if proposer_file is not None:
+        if not proposer_file.strip():
+            raise ValueError("proposer file path is empty")
+        path = Path(proposer_file)
+        if target_date is not None:
+            expected_name = f"ai_review_proposer_output_{target_date}.txt"
+            if path.name != expected_name:
+                raise ValueError(
+                    f"proposer file name mismatch: expected {expected_name}, got {path.name}"
+                )
+        if not path.exists():
+            raise FileNotFoundError(f"proposer file not found: {path}")
+        size = path.stat().st_size
+        if size > PROPOSER_FILE_MAX_BYTES:
+            raise ValueError(
+                f"proposer file too large: {size} bytes (limit {PROPOSER_FILE_MAX_BYTES})"
+            )
+        text = path.read_text(encoding="utf-8-sig").strip()
+        if not text:
+            raise ValueError(f"proposer file is empty: {path}")
+        return text
     system, prompt = build_proposer_prompt(summary)
     return call_groq(prompt=prompt, system=system, max_tokens=2000)
 
@@ -936,6 +973,11 @@ def main() -> int:
         "test_mode": args.test_mode,
         "summary_path": "",
         "status": "started",
+        "proposer_source": (
+            "stub"
+            if args.test_mode != "live"
+            else ("file" if args.proposer_file is not None else "groq")
+        ),
         "proposer_output": None,
         "skeptic_output": None,
         "moderator_attempts": [],
@@ -987,8 +1029,16 @@ def main() -> int:
         print(f"[WARNING] apply_daily_rollouts failed (non-fatal): {exc}", file=sys.stderr)
 
     try:
-        proposer_output = _call_proposer(summary, args.test_mode)
+        proposer_output = _call_proposer(
+            summary, args.test_mode, args.proposer_file, target_date
+        )
         decision_doc["proposer_output"] = proposer_output
+        if args.test_mode == "live" and args.proposer_file is not None:
+            proposer_path = Path(args.proposer_file)
+            decision_doc["proposer_file"] = str(proposer_path)
+            decision_doc["proposer_file_sha256"] = hashlib.sha256(
+                proposer_path.read_bytes()
+            ).hexdigest()
 
         skeptic_output = _call_skeptic(summary, proposer_output, args.test_mode)
         decision_doc["skeptic_output"] = skeptic_output
